@@ -29,7 +29,7 @@ class jacques(abc.ABC):
             could be calculated. P is number of features, equal to 1 for now.
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
             (l, t) in the training set.
-        y_train_val: 1D tensor with length L*(T-6-1)
+        y_train_val: 1D tensor with length N
             Each value is a forecast target variable value in the training set.
             y_{l, t} = z_{l, 1, t+h}
         x_T: 2D tensor with shape (L, P = 1)
