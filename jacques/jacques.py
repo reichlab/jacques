@@ -12,9 +12,8 @@ class jacques(abc.ABC):
         Parameters
         ----------
         data: data frame 
-            It has columns location, date, inc_hosp and population
-            and a column (rate) with a response variable to forecast. This data frame needs to be
-            sorted by location and date columns in ascending orer.
+            It has columns location, date, and a column with the response variable to forecast.
+            This data frame needs to be sorted by location and date columns in ascending order.
         target_var: string
             Name of the column in the data frame with the forecast target variable.
             Default to "inc_hosp"
