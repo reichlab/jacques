@@ -22,7 +22,7 @@ class jacques(abc.ABC):
 
         Returns
         -------
-        x_train_val: 2D tensor with shape (L*(T-6-1), P = 1) 
+        x_train_val: 2D tensor with shape (N, P = 1) 
             L is number of lcoation. T is number of time points. P is number of features
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
             (l, t) in the training set.
