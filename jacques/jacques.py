@@ -23,7 +23,10 @@ class jacques(abc.ABC):
         Returns
         -------
         x_train_val: 2D tensor with shape (N, P = 1) 
-            L is number of lcoation. T is number of time points. P is number of features
+            N is the number of combinations of location l and time point t for which
+            the full feature vector x_{l,t}, possibly including lagged covariate values,
+            and the response y_{l,t}, corresponding to the target variable at time t+h,
+            could be calculated. P is number of features, equal to 1 for now.
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
             (l, t) in the training set.
         y_train_val: 1D tensor with length L*(T-6-1)
