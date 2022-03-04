@@ -42,7 +42,7 @@ class jacques(abc.ABC):
 
         # create a column for 7-day moving avg of rates
         # for each location, the first 6 days have nan
-        data['moving_avg_rate'] = data.groupby('location').rolling(7)['rate'].mean().reset_index(drop=True)
+        data['moving_avg_rate'] = data.groupby('location').rolling(7)[target_var].mean().reset_index(drop=True)
         
         # list of indices where rates are nan
         na_idx = data.loc[pd.isna(data["moving_avg_rate"]), :].index
