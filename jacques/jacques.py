@@ -41,42 +41,39 @@ class jacques(abc.ABC):
         T = max(data['date'])
 
         # create a column for 7-day moving avg of rates
-        # for each location, the first 6 days have nan
+        # for each location, the first 6 days have nans
         data['moving_avg_rate'] = data.groupby('location').rolling(7)[target_var].mean().reset_index(drop=True)
         
-        # list of indices where calculated features are nan
-        na_idx = data.loc[pd.isna(data["moving_avg_rate"]), :].index
-        
-        # take out nans in data
-        tmp = data.drop(na_idx)
-        
-        # list of indices where date is the forecast date in tmp
-        T_idx = tmp.loc[tmp["date"]== T,:].index
+        # create a column for h horizon ahead target for observed values. 
+        # for each location, this column has h nans in the end.
+        # the last nan is for forecast date.
+        data['h_days_ahead_target'] = data.groupby('location')[target_var].shift(-h)
 
         # create x_T using data with date = forecast_date (T)
         data_T = data.loc[data["date"]== T,:]
-    
+
         # x_T is (L, P = 1)
         x_T = data_T['moving_avg_rate'].values.reshape(-1, 1)
+
+        # list of indices of rows that have as least one nan
+        na_idx, _ = np.where(data.isna())
         
-        # x_train_val is (L*(T-6-1), P = 1) 
-        train_val = tmp.drop(T_idx)
+        # take out nans in data
+        train_val = data.drop(na_idx)
+
+        # shape is (N = L * (T - 6 - 1 - (h -1))), P = 1)
         x_train_val = train_val['moving_avg_rate'].values.reshape(-1, 1)
-
-        # tmp has value on forecast_date for each location
-        grp = tmp[target_var].groupby(tmp['location'])
-        # y_train_val is (L*(T-6-1), 1) 
-        # pad h-1 numbers of nan at the end of each v means extending the array for every date before forecast_date (T)
-        # -1 is for forecast_date (T)
-        y_train_val = np.vstack([np.pad(v, (0, h-1), constant_values=np.nan)[h:].reshape(-1, 1) for _, v in grp])
-
+        
+        # shape is (N = L * (T - 6 - 1 - (h -1))), P = 1)
+        y_train_val = train_val['h_days_ahead_target'].values.reshape(-1, 1)
+        
         # convert everything to tensor
         x_train_val = tf.constant(x_train_val)
         y_train_val = tf.constant(y_train_val)
         x_T = tf.constant(x_T)
         
         return x_train_val, y_train_val, x_T
-    
+
     def pinball_loss(self, y, q, tau):
         """
         Calculate pinball loss of predictions from a single model.
