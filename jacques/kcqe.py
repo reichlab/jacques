@@ -51,6 +51,7 @@ class KCQE():
         
         Inputs
         ------
+        param_vec: tensor of shape `(self.n_param,)` with vector of parameters
         x_train: tensor of shape `(batch_shape) + (n_train, p)` with training
             set features
         y_train: tensor of shape `(batch_shape) + (n_train,)` with training
