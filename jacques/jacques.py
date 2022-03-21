@@ -24,14 +24,14 @@ class jacques(abc.ABC):
 
         Returns
         -------
-        x_train_val: 2D tensor with shape (N, P = 1) 
-            N is the number of combinations of location l and time point t for which
+        x_train_val: 3D tensor with shape (L, T, P = 1) 
+            L is the number of location l and T is the number of time point t for which
             the full feature vector x_{l,t}, possibly including lagged covariate values,
             and the response y_{l,t}, corresponding to the target variable at time t+h,
             could be calculated. P is number of features, equal to 1 for now.
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
             (l, t) in the training set.
-        y_train_val: 1D tensor with length N
+        y_train_val: 3D tensor with with shape (L, T, 1) 
             Each value is a forecast target variable value in the training set.
             y_{l, t} = z_{l, 1, t+h}
         x_T: 2D tensor with shape (L, P = 1)
@@ -67,12 +67,10 @@ class jacques(abc.ABC):
         features = ['moving_avg_rate']
         x_train_val = train_val.pivot(index = "location", columns = "date", values = features).to_numpy()
         x_train_val = x_train_val.reshape((x_train_val.shape[0], x_train_val.shape[1], len(features)))
-        #x_train_val = train_val['moving_avg_rate'].values.reshape(-1, 1)
         
         # shape is (L, (T - 6 - 1 - (h -1))), P = 1)
         y_train_val = train_val.pivot(index = "location", columns = "date", values = 'h_days_ahead_target').to_numpy()
         y_train_val = y_train_val.reshape((y_train_val.shape[0], y_train_val.shape[1], 1))
-        #y_train_val = train_val['h_days_ahead_target'].values.reshape(-1, 1)
         
         # convert everything to tensor
         x_train_val = tf.constant(x_train_val)
@@ -183,7 +181,7 @@ class jacques(abc.ABC):
         -------
         num_blocks: integer
             Total number of block could be created with given dataset
-        x_test: 3D tensor with shape (L, T, P = 1)
+        x_test: 2D tensor with shape (L, P = 1)
             Each value is test set feature for each location at forecast date.
         xval_batch_gen: generator
             A generator initialized with x_train_val and y_train_val, block_size and batch_size
