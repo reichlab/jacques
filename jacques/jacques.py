@@ -89,7 +89,7 @@ class jacques(abc.ABC):
             y_train = tf.expand_dims(y_train, axis = 0)
 
             i += 1
-            
+
             yield x_val, x_train, y_val, y_train
        
     
@@ -156,26 +156,26 @@ class jacques(abc.ABC):
         return loss
     
     @abc.abstractmethod
-    # from qenspy
-    def predict(self, q, train_q, w):
+    def predict(self, param_vec, x_train, y_train, x_test, tau):
         """
-        Generate prediction from a quantile forecast ensemble.
+        Generate quantile prediction
+        
         Parameters
         ----------
-        q: 3D tensor with shape (N, K, M)
-            Component prediction quantiles for observation cases i = 1, ..., N,
-            quantile levels k = 1, ..., K, and models m = 1, ..., M
-        train_q: boolean
-            Indicator for calculating bandwidth during training or not
-            It is only used in MedianQens.
-        w: 2D tensor with shape (K, M)
-            Component model weights, where `w[m, k]` is the weight given to
-            model m for quantile level k
+        param_vec: tensor of shape `(self.n_param,)` with vector of parameters
+        x_train: tensor of shape `(batch_shape) + (n_train, P)` with training
+            set features
+        y_train: tensor of shape `(batch_shape) + (n_train,)` with training
+            set response values
+        x_test: tensor of shape `(batch_shape) + (n_test, P)` with test set
+            features
+        tau: tensor of length `k` with probability levels at which to extract
+            quantile estimates
+        
         Returns
         -------
-        ensemble_q: 2D tensor with shape (N, K)
-            Ensemble forecasts for each observation case i = 1, ..., N and
-            quantile level k = 1, ..., K
+        tensor of shape `(batch_shape) + (n_test, k)` with test set quantile
+            estimates at each quantile level
         """
 
 
