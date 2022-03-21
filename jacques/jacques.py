@@ -31,12 +31,12 @@ class jacques(abc.ABC):
         
         Returns
         -------
-        x_val: 2D tensor with shape (N, P = 1) 
+        x_val: 3D tensor with shape (batch_size = 1, N, P = 1) 
             N is the number of combinations of location l and time point t in 
             a block of feature vector x_train_val. P is the number of features.
-        y_val: 1D tensor with shape (N,)
+        y_val: 2D tensor with shape (batch_size = 1, N)
             Corresponding obseration data of x_val
-        x_train: 2D tensor with shape (N', P = 1)
+        x_train: 3D tensor with shape (batch_size = 1, N', P = 1)
             N' is the number of combinations of location l and time point t in 
             the remaining blocks of feature vector x_train_val.
             P is the number of features.
@@ -44,12 +44,15 @@ class jacques(abc.ABC):
             then x_train has the remaining blocks = all blocks - x_val - one neighbor block of x_val
             if x_val is a middle block, 
             then x_train has the remaining blocks = all blocks - x_val - two adjacent blocks of x_val
-        y_train: 1D tensor with shape (N',)
+        y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
+
+        assert batch_size == 1
+
         leftover = y_train_val.shape[1] % block_size
             
-        block_start_index = np.arange(start = leftover, stop = y_train_val.shape[1]-1, step = block_size)
+        block_start_index = np.arange(start = leftover, stop = y_train_val.shape[1], step = block_size)
             
         num_blocks = len(block_start_index)
 
@@ -62,28 +65,31 @@ class jacques(abc.ABC):
             if block_start_index[i] == leftover:
                 train_idx = list(range(0, block_start_index[i])) + list(range(block_start_index[i] + 2 * block_size,y_train_val.shape[1]))
                 
-            elif block_start_index[i] == y_train_val.shape[1]- 1 - block_size:
+            elif block_start_index[i] == y_train_val.shape[1] - block_size:
                 train_idx = list(range(0, block_start_index[i] - block_size))
                 
             else:
                 train_idx = list(range(0, block_start_index[i] - block_size)) + list(range(block_start_index[i] + 2 * block_size, y_train_val.shape[1]))
-                
-            
-            i += 1
 
             # gather results
             x_val = x_train_val[:,block_start_index[i]: block_start_index[i] + block_size,:]
             x_val = tf.reshape(x_val, (x_val.shape[0] * x_val.shape[1], x_val.shape[2]))
-            
+            x_val = tf.expand_dims(x_val, axis = 0)
+
             x_train = tf.gather(x_train_val, train_idx, axis = 1)
             x_train = tf.reshape(x_train, (x_train.shape[0] * x_train.shape[1], x_train.shape[2]))
-            
+            x_train = tf.expand_dims(x_train, axis = 0)
+
             y_val = y_train_val[:,block_start_index[i]: block_start_index[i] + block_size,:]
             y_val = tf.reshape(y_val, [-1])
-            
+            y_val = tf.expand_dims(y_val, axis = 0)
+
             y_train = tf.gather(y_train_val, train_idx, axis = 1)
             y_train = tf.reshape(y_train, [-1])
+            y_train = tf.expand_dims(y_train, axis = 0)
 
+            i += 1
+            
             yield x_val, x_train, y_val, y_train
        
     
