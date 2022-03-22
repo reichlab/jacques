@@ -135,26 +135,67 @@ class jacques(abc.ABC):
         Calculate pinball loss of predictions from a single model.
         Parameters
         ----------
-        y: 1D tensor of length N
-            observed values
-        q: 2D tensor with shape (N, K)
+        y: 2D tensor with shape (batch_size, N)
+            observed response values
+        q: 3D tensor with shape (batch_shape, N, K)
             forecast values
-        tau: 1D tensor of length K: Each slice `q[:, k]` corresponds 
-        to predictions at quantile level `tau[k]`
+        tau: 1D tensor of length K
+            Each slice `q[:, :, k]` corresponds to predictions at quantile level `tau[k]`
         Returns
         -------
         Mean pinball loss over all predictions as scalar tensor 
         (mean over all i = 1, …, N and k = 1, …, K)
         """
     
-        # add an extra dimension to y --> (N,1)
+        # add an extra dimension to y --> (batch_size, N,1)
         y_broadcast = tf.expand_dims(y, -1)
-        # broadcast y to shape (N, K)
+        # broadcast y to shape (batch_size, N, K)
         y_broadcast = tf.broadcast_to(y_broadcast, q.shape)
         loss = tf.reduce_mean(tf.maximum(tau*(y_broadcast - q), (tau-1)*(y_broadcast-q)))
 
         return loss
     
+    def pinball_loss_objective(self, param_vec, x_train, y_train, x_test, y_test, tau):
+        """
+        Pinball loss objective function for use during parameter estimation:
+        a function of component weights
+        
+        Parameters
+        ----------
+        param_vec: 1D tensor 
+            parameter values in an unconstrained space (i.e., real numbers)
+        x_train: 3D tensor with shape (batch_size, N_train, P = 1)
+            feature values of the training set
+        y_train: 2D tensor with shape (batch_size, N_train)
+            observed response values of the training set
+        x_test: 3D tensor with shape (batch_size, N_test = L, P = 1)
+            feature values for each location at forecast date in test set
+        y_test: 2D tensor with shape (batch_size, N_test = L)
+            observed response values of the test set
+        tau: 1D of length K
+            quantile levels (probabilities)
+
+        Returns
+        -------
+        Scalar pinball loss for predictions of y_test at 
+        quantile levels tau based on the training data
+        """
+        
+        # q_hat has shape (batch_shape, N_test = L, K)
+        q_hat = self.predict(param_vec, x_train, y_train, x_test, tau)
+
+        loss = self.pinball_loss(y_test, q_hat, tau)
+
+        return loss
+
+    @property
+    @abc.abstractmethod
+    def n_prams(self):
+        """
+        Abstract property for number of parameters of a model
+        """
+        pass
+
     @abc.abstractmethod
     def predict(self, param_vec, x_train, y_train, x_test, tau):
         """
@@ -163,11 +204,11 @@ class jacques(abc.ABC):
         Parameters
         ----------
         param_vec: tensor of shape `(self.n_param,)` with vector of parameters
-        x_train: tensor of shape `(batch_shape) + (n_train, P)` with training
+        x_train: 3D tensor of shape `(batch_shape) + (n_train, P)` with training
             set features
-        y_train: tensor of shape `(batch_shape) + (n_train,)` with training
+        y_train: 2D  tensor of shape `(batch_shape) + (n_train,)` with training
             set response values
-        x_test: tensor of shape `(batch_shape) + (n_test, P)` with test set
+        x_test: 3D tensor of shape `(batch_shape) + (n_test, P)` with test set
             features
         tau: tensor of length `k` with probability levels at which to extract
             quantile estimates
