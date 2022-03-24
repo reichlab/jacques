@@ -1,10 +1,14 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 import abc
 import math
 import random
-from featurize import featurize_data
+from jacques.featurize import featurize_data
+import pickle
 
 
 class jacques(abc.ABC):
@@ -182,19 +186,32 @@ class jacques(abc.ABC):
         """
         
         # q_hat has shape (batch_shape, N_test = L, K)
-        q_hat = self.predict(param_vec, x_train, y_train, x_test, tau)
-
+        q_hat = self.predict(param_vec = param_vec, 
+            x_train = x_train, y_train = y_train, 
+            x_test = x_test, tau = tau)
+        
         loss = self.pinball_loss(y_test, q_hat, tau)
 
         return loss
 
+    # not using this for now
+    def set_param_estimates_vec(self, param_estimates_vec):
+        """
+        Set parameter estimates in vector form 
+        Parameters
+        ----------
+        param_estimates_vec: 1D tensor of length K*(M-1)
+        """
+        self.param_estimates_vec = param_estimates_vec
+
     @property
     @abc.abstractmethod
-    def n_prams(self):
+    def n_param(self):
         """
         Abstract property for number of parameters of a model
         """
         pass
+    
 
     @abc.abstractmethod
     def predict(self, param_vec, x_train, y_train, x_test, tau):
@@ -218,6 +235,129 @@ class jacques(abc.ABC):
         tensor of shape `(batch_shape) + (n_test, k)` with test set quantile
             estimates at each quantile level
         """
+    
+    def fit(self, tau, optim_method, num_epochs, learning_rate, 
+        block_size = 21, batch_size = 1, init_param_vec = None, verbose = False, 
+        save_frequency = None, save_path = None, 
+        # new parameters for demo
+        xval_batch_gen = None, num_blocks = None, x_test = None,
+        # these are optional just for working with demo
+        data = None, target_var = None, h = None):
+        """
+        Estimate model parameters
+
+        Parameters
+        ----------
+        data: data frame
+            It has columns location, date, and a column with the response variable to forecast,
+            containing data up to time T. 
+            This data frame needs to be sorted by location and date columns in ascending order.
+            Eventually, may also allow for other covariates to be given in other columns in the input.
+        target_var: string
+            Name of the column in the data frame with the forecast target variable.
+        h: integer
+            Forecast horizon. 
+        block_size: integer
+            Number of consecutive time points in a block. Default to 21. 
+        batch_size: integer
+            Number of blocks in each batch. Each block has size of block_size. Default to 1.
+            This means each gradient descent iteration sees forecasts for only one time block.
+        tau: 1D tensor of length K 
+            Quantile levels (probabilities) at which to forecast
+        init_param_vec: optional 1D tensor of length K*(M-1)
+            Optional initial values for the weights during estimation
+        optim_method: string 
+            Method for optimization. For now, only support "adam" or "sgd".
+        num_epochs: integer 
+            Number of iterations for optimization. 
+            One epoch consists of a run through all training set time blocks.
+        learning_rate: scalar tensor or a float value
+            The learning rate
+        verbose: boolean
+            If True, intermediate messages are printed during estimation. Defaults to False.
+        save_frequency: integer
+            Defaults to None. 
+            Intermediate state of parameter estimation is saved every `save_frequency` epochs.
+        save_path: string
+            Defaults to None. Path to save parameter estimation snapshots.
+        """
+        # initialize init_param_vec
+        if init_param_vec == None:
+            # ?????
+            init_param_vec = tf.constant(np.zeros(self.n_param))
+
+        # declare variable representing parameters to estimate
+        param_vec_var = tf.Variable(
+            initial_value=init_param_vec,
+            name='param_vec',
+            dtype=np.float64)
+        
+        if xval_batch_gen is None and num_blocks is None and x_test is None:
+            xval_batch_gen, num_blocks, x_test = self.init_xval_split(data, target_var, h, batch_size, block_size)
+        
+        # ????
+        self.x_test = x_test
+
+        # create optimizer
+        if optim_method == "adam":
+            optimizer = tf.optimizers.Adam(learning_rate = learning_rate)
+        elif optim_method == "sgd":
+            optimizer = tf.optimizers.SGD(learning_rate = learning_rate)
+
+        # number of batches
+        num_batches = math.ceil(num_blocks / batch_size)
+        
+        # initiate loss trace
+        lls_ = np.zeros(num_epochs * num_batches, np.float64)
+        
+        # create a list of trainable variables
+        trainable_variables = [param_vec_var]
+
+        for epoch in range(num_epochs):
+            for batch_ind in range(num_batches):
+                
+                x_val, x_train, y_val, y_train = next(xval_batch_gen)
+
+                with tf.GradientTape() as tape:
+                    loss = self.pinball_loss_objective(
+                        param_vec = param_vec_var,
+                        x_train = x_train, 
+                        y_train = y_train,
+                        x_test = x_val, 
+                        y_test = y_val, 
+                        tau = tau)
+                
+                grads = tape.gradient(loss, trainable_variables)
+                grads, _ = tf.clip_by_global_norm(grads, 10.0)
+                optimizer.apply_gradients(zip(grads, trainable_variables))
+
+                if verbose:
+                    print("epoch idx = %d" % epoch)
+                    print("batch idx = %d" % batch_ind)
+                    print("loss idx = %d" % (epoch+1) * (batch_ind+1))
+                    print("param estimates vec = ")
+                    print(param_vec_var.numpy())
+                    print("loss = ")
+                    print(loss.numpy())
+                    print("grads = ")
+                    print(grads)
+                if save_frequency is not None and save_path is not None:
+                    
+                    if ((epoch+1) * (batch_ind+1)) % save_frequency == 0:
+                        # save parameter estimates and loss trace
+                        params_to_save = {
+                            'param_estimates_vec': param_vec_var.numpy(),
+                            'loss_trace': lls_
+                        }
+            
+                        pickle.dump(params_to_save, open(str(save_path), "wb"))
+        
+        # set parameter estimates
+        #self.set_param_estimates_vec(params_vec_var.numpy())
+        self.loss_trace = lls_
+
+        return param_vec_var
+
 
 
 # class some_child_class(jacques):

@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
