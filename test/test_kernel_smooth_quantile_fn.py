@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -162,6 +165,5 @@ class Test_Kernel_Smooth_Quantile_Fn(unittest.TestCase):
         # actual matches expected
         self.assertTrue(np.all(np.abs(actual.numpy() - expected) < 1e-12))
 
-
-        
-        
+if __name__ == '__main__':
+    unittest.main()

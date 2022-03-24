@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -82,3 +85,5 @@ class Test_Gaussian_Kernel(unittest.TestCase):
         # within batches and x2 observations, weights sum to 1 across x1 observations
         self.assertTrue(np.all(np.abs(tf.reduce_sum(actual_weights, axis=-1).numpy() - np.ones((2, 3, 10))) < 1e-12))
 
+if __name__ == '__main__':
+    unittest.main()
