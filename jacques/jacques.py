@@ -309,6 +309,7 @@ class jacques(abc.ABC):
         
         # initiate loss trace
         lls_ = np.zeros(num_epochs * num_batches, np.float64)
+        i=0
         
         # create a list of trainable variables
         trainable_variables = [param_vec_var]
@@ -330,6 +331,8 @@ class jacques(abc.ABC):
                 grads = tape.gradient(loss, trainable_variables)
                 grads, _ = tf.clip_by_global_norm(grads, 10.0)
                 optimizer.apply_gradients(zip(grads, trainable_variables))
+                lls_[i] = loss
+                i+=1
 
                 if verbose:
                     print("epoch idx = %d" % epoch)

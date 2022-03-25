@@ -20,7 +20,6 @@ class KCQE(jacques):
         else:
             raise ValueError("x_kernel must be 'gaussian_diag' or 'gaussian_full'")
         
-        # TODO: uncomment once KCQE extends jacques base class
         super(KCQE, self).__init__()
     
     @property
