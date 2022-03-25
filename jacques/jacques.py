@@ -130,7 +130,7 @@ class jacques(abc.ABC):
         # calculate number of blocks
         num_blocks = math.floor(y_train_val.shape[1]/block_size)
 
-        xval_batch_gen = self.generator(x_train_val, y_train_val, block_size=21, batch_size=1)
+        xval_batch_gen = self.generator(x_train_val = x_train_val, y_train_val = y_train_val, block_size=block_size, batch_size=batch_size)
 
         return num_blocks, x_test, xval_batch_gen
 
