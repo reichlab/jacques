@@ -14,18 +14,18 @@ import pickle
 class jacques(abc.ABC):
     def generator(self, x_train_val, y_train_val, batch_size, block_size):
         """
-        Traning/validation set data generator
+        Training/validation set data generator
 
         Parameters
         ----------
-         x_train_val: 3D tensor with shape (L, T, P = 1) 
+        x_train_val: 3D tensor with shape (L, T, P) 
             L is the number of location l and T is the number of time point t for which
             the full feature vector x_{l,t}, possibly including lagged covariate values,
             and the response y_{l,t}, corresponding to the target variable at time t+h,
-            could be calculated. P is number of features, equal to 1 for now.
+            could be calculated. P is number of features.
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
             (l, t) in the training set.
-         y_train_val: 3D tensor with length (L, T, 1)
+        y_train_val: 2D tensor with length (L, T)
             Each value is a forecast target variable value in the training set.
             y_{l, t} = z_{l, 1, t+h}
         batch_size: integer
@@ -35,12 +35,12 @@ class jacques(abc.ABC):
         
         Returns
         -------
-        x_val: 3D tensor with shape (batch_size = 1, N, P = 1) 
+        x_val: 3D tensor with shape (batch_size = 1, N, P) 
             N is the number of combinations of location l and time point t in 
             a block of feature vector x_train_val. P is the number of features.
         y_val: 2D tensor with shape (batch_size = 1, N)
             Corresponding obseration data of x_val
-        x_train: 3D tensor with shape (batch_size = 1, N', P = 1)
+        x_train: 3D tensor with shape (batch_size = 1, N', P)
             N' is the number of combinations of location l and time point t in 
             the remaining blocks of feature vector x_train_val.
             P is the number of features.
@@ -66,12 +66,39 @@ class jacques(abc.ABC):
                 i = 0
                 np.random.shuffle(block_start_index)
             
+            # if the first full block is selected as validation set
             if block_start_index[i] == leftover:
-                train_idx = list(range(0, block_start_index[i])) + list(range(block_start_index[i] + 2 * block_size,y_train_val.shape[1]))
+                # need to drop a random block from training set 
+                # take out block_start_index and the block after it out of choices
+
+                drop_block_start_idx = random.choice(
+                    list(set(block_start_index) - 
+                    set([block_start_index[i], block_start_index[i] + block_size])))
                 
+                if drop_block_start_idx > block_start_index[i] + 2 * block_size:
+                    train_idx = list(range(0, block_start_index[i])) + \
+                        list(range(block_start_index[i] + 2 * block_size, drop_block_start_idx)) + \
+                        list(range(drop_block_start_idx + block_size, y_train_val.shape[1]))
+                else:
+                    # if they are equal
+                    train_idx = list(range(0, block_start_index[i])) +\
+                        list(range(block_start_index[i] + 3 * block_size, y_train_val.shape[1]))
+            # if the last full block is selected as validation set
             elif block_start_index[i] == y_train_val.shape[1] - block_size:
-                train_idx = list(range(0, block_start_index[i] - block_size))
-                
+                # need to drop a random block from training set 
+                # take out block_start_index and the block before it out of choices
+
+                drop_block_start_idx = random.choice(
+                    list(set(block_start_index) -
+                    set([block_start_index[i], block_start_index[i] - block_size])))
+
+                if drop_block_start_idx < block_start_index[i] -  2 * block_size:
+                    train_idx = list(range(0, drop_block_start_idx)) +\
+                        list(range(drop_block_start_idx + block_size, block_start_index[i] - block_size))
+                else: 
+                    # if they are equal
+                    train_idx = list(range(0, block_start_index[i] - 2 * block_size))
+            # if the middle block is selected as validation set
             else:
                 train_idx = list(range(0, block_start_index[i] - block_size)) + list(range(block_start_index[i] + 2 * block_size, y_train_val.shape[1]))
 
@@ -84,14 +111,10 @@ class jacques(abc.ABC):
             x_train = tf.reshape(x_train, (x_train.shape[0] * x_train.shape[1], x_train.shape[2]))
             x_train = tf.expand_dims(x_train, axis = 0)
 
-            y_val = y_train_val[:,block_start_index[i]: block_start_index[i] + block_size,:]
-            y_val = tf.reshape(y_val, [-1])
-            y_val = tf.expand_dims(y_val, axis = 0)
-
+            y_val = y_train_val[:,block_start_index[i]: block_start_index[i] + block_size]
+        
             y_train = tf.gather(y_train_val, train_idx, axis = 1)
-            y_train = tf.reshape(y_train, [-1])
-            y_train = tf.expand_dims(y_train, axis = 0)
-
+        
             i += 1
 
             yield x_val, x_train, y_val, y_train
@@ -120,7 +143,7 @@ class jacques(abc.ABC):
         -------
         num_blocks: integer
             Total number of block could be created with given dataset
-        x_test: 2D tensor with shape (L, P = 1)
+        x_test: 2D tensor with shape (L, P)
             Each value is test set feature for each location at forecast date.
         xval_batch_gen: generator
             A generator initialized with x_train_val and y_train_val, block_size and batch_size
@@ -168,11 +191,11 @@ class jacques(abc.ABC):
         ----------
         param_vec: 1D tensor 
             parameter values in an unconstrained space (i.e., real numbers)
-        x_train: 3D tensor with shape (batch_size, N_train, P = 1)
+        x_train: 3D tensor with shape (batch_size, N_train, P)
             feature values of the training set
         y_train: 2D tensor with shape (batch_size, N_train)
             observed response values of the training set
-        x_test: 3D tensor with shape (batch_size, N_test = L, P = 1)
+        x_test: 3D tensor with shape (batch_size, N_test = L, P)
             feature values for each location at forecast date in test set
         y_test: 2D tensor with shape (batch_size, N_test = L)
             observed response values of the test set
@@ -236,29 +259,18 @@ class jacques(abc.ABC):
             estimates at each quantile level
         """
     
-    def fit(self, tau, optim_method, num_epochs, learning_rate, 
-        block_size = 21, batch_size = 1, init_param_vec = None, verbose = False, 
-        save_frequency = None, save_path = None, 
-        # new parameters for demo
-        xval_batch_gen = None, num_blocks = None, x_test = None,
-        # these are optional just for working with demo
-        data = None, target_var = None, h = None):
+    def fit(self, xval_batch_gen, num_blocks, tau, optim_method, num_epochs, learning_rate, 
+        batch_size = 1, init_param_vec = None, verbose = False, 
+        save_frequency = None, save_path = None):
         """
         Estimate model parameters
 
         Parameters
         ----------
-        data: data frame
-            It has columns location, date, and a column with the response variable to forecast,
-            containing data up to time T. 
-            This data frame needs to be sorted by location and date columns in ascending order.
-            Eventually, may also allow for other covariates to be given in other columns in the input.
-        target_var: string
-            Name of the column in the data frame with the forecast target variable.
-        h: integer
-            Forecast horizon. 
-        block_size: integer
-            Number of consecutive time points in a block. Default to 21. 
+        xval_batch_gen: generator
+            Training/validation set data generator from the `generator()`. 
+        num_blocks: integer
+            Total number of block could be created with given dataset
         batch_size: integer
             Number of blocks in each batch. Each block has size of block_size. Default to 1.
             This means each gradient descent iteration sees forecasts for only one time block.
@@ -283,20 +295,21 @@ class jacques(abc.ABC):
         """
         # initialize init_param_vec
         if init_param_vec == None:
-            # ?????
+            # all zeros
             init_param_vec = tf.constant(np.zeros(self.n_param))
+
+            # does not work well :(
+            # He weight initialization
+            # weight ~ N(0.0, sqrt(2/n))
+            #std = math.sqrt(2.0 / self.n_param)
+            #init_param_vec = np.random.rand(self.n_param) * std
+            #init_param_vec = tf.constant(init_param_vec)
 
         # declare variable representing parameters to estimate
         param_vec_var = tf.Variable(
             initial_value=init_param_vec,
             name='param_vec',
             dtype=np.float64)
-        
-        if xval_batch_gen is None and num_blocks is None and x_test is None:
-            xval_batch_gen, num_blocks, x_test = self.init_xval_split(data, target_var, h, batch_size, block_size)
-        
-        # ????
-        self.x_test = x_test
 
         # create optimizer
         if optim_method == "adam":
