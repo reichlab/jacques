@@ -1,9 +1,6 @@
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import numpy as np
 import tensorflow as tf
-from jacques.jacques import jacques
+from .jacques import jacques
 import tensorflow_probability as tfp
 
 from . import kernels
