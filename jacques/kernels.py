@@ -2,6 +2,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+softplus_bijector = tfp.bijectors.Softplus()
+corr_chol_bijector = tfp.bijectors.CorrelationCholesky()
+
 
 def diff_x_pairs(x1, x2):
     """
@@ -40,10 +43,40 @@ def diff_x_pairs(x1, x2):
     return tf.expand_dims(x1, -2) - tf.expand_dims(x2, -3)
 
 
+def transform_chol(theta_raw, d):
+    """
+    Construct the Cholesky factor of a d by d covariance matrix from
+    unconstrained real numbers
+    
+    Parameters
+    ----------
+    theta_raw: 1d tensor of unconstrained real numbers, of length
+        d + d * (d - 1) / 2
+    d: integer dimension of output
+    
+    Returns
+    -------
+    d by d lower diagonal Cholesky factor of a variance matrix
+    
+    Notes
+    -----
+    The logic is to calculate a lower diagonal correlation Cholesky factor
+    using the CorrelationCholesky bijector, and right multiply by a diagonal
+    matrix with positive values on the diagonal. Positivity of the diagonal
+    values is enforced with a softplus bijector, and the right multiplication is
+    done with a ScaleMatvecDiag bijector.
+    """
+    diag_raw = theta_raw[:d]
+    corr_chol_raw = theta_raw[d:]
+    scale_bijector = tfp.bijectors.ScaleMatvecDiag(
+        scale_diag=softplus_bijector.forward(diag_raw))
+    return scale_bijector.forward(x=corr_chol_bijector.forward(corr_chol_raw))
+
+
 def gaussian_kernel(x1, x2, B_chol):
     """
-    Calculate the differences between all pairs of feature vectors within
-    batches. 
+    Calculate the Gaussian kernel for all pairs of feature vectors within
+    batches of x1 and x2.
     
     Inputs
     ------
@@ -123,10 +156,10 @@ def kernel_weights(x1, x2, theta_b, kernel = 'gaussian_diag'):
     if kernel == 'gaussian_diag':
         # TODO: Direct implementation not requiring multiplication by a diagonal
         # Cholesky factor
-        B_chol = tf.linalg.diag(theta_b)
+        B_chol = tf.linalg.diag(softplus_bijector.forward(theta_b))
         kernel_vals = gaussian_kernel(x1, x2, B_chol)
     elif kernel == 'gaussian_full':
-        B_chol = tfp.math.fill_triangular(theta_b)
+        B_chol = transform_chol(theta_raw=theta_b, d=x1.shape[-1])
         kernel_vals = gaussian_kernel(x1, x2, B_chol)
     else:
         raise ValueError("kernel must be 'gaussian_diag' or 'gaussian_full'")
