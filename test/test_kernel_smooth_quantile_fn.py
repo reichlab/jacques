@@ -162,6 +162,5 @@ class Test_Kernel_Smooth_Quantile_Fn(unittest.TestCase):
         # actual matches expected
         self.assertTrue(np.all(np.abs(actual.numpy() - expected) < 1e-12))
 
-
-        
-        
+if __name__ == '__main__':
+    unittest.main()

@@ -1,25 +1,36 @@
 import numpy as np
 import tensorflow as tf
+from .jacques import jacques
 import tensorflow_probability as tfp
 
 from . import kernels
 
 
-class KCQE():
+class KCQE(jacques):
     def __init__(self, x_kernel = 'gaussian_diag', p=1) -> None:
         self.x_kernel = x_kernel
         self.p = p
         if x_kernel == 'gaussian_diag':
-            self.n_param = p + 1
+            self._n_param = p + 1
         elif x_kernel == 'gaussian_full':
-            self.n_param = p * (p - 1) / 2 + 1
+            self._n_param = p * (p - 1) / 2 + 1
         else:
             raise ValueError("x_kernel must be 'gaussian_diag' or 'gaussian_full'")
         
-        # TODO: uncomment once KCQE extends jacques base class
-        # super(KCQE, self).__init__()
+        super(KCQE, self).__init__()
     
-    
+    @property
+    def n_param(self):
+        """
+        Set number of parameters based on kernel and number of features
+        """
+        return self._n_param
+
+    @n_param.setter
+    def n_param(self, value):
+        self._n_param = value
+       
+        
     def unpack_param_vec(self, param_vec):
         """
         Unpack vector of parameters into a dictionary
@@ -36,7 +47,7 @@ class KCQE():
         ------
         ValueError if len(param_vec) != self.n_param
         """
-        if len(param_vec) != self.n_param:
+        if param_vec.shape[0] != self._n_param:
             raise ValueError("Require len(param_vec) == self.n_param")
         
         return {
@@ -51,6 +62,7 @@ class KCQE():
         
         Inputs
         ------
+        param_vec: tensor of shape `(self.n_param,)` with vector of parameters
         x_train: tensor of shape `(batch_shape) + (n_train, p)` with training
             set features
         y_train: tensor of shape `(batch_shape) + (n_train,)` with training

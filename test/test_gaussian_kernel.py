@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -57,7 +60,10 @@ class Test_Gaussian_Kernel(unittest.TestCase):
     def test_gaussian_full_weights(self):
         x1 = tf.constant(np.arange(2*3*10*5).reshape(2, 3, 10, 5), dtype='float64')
         x2 = tf.constant(np.arange(2*3*4*5).reshape(2, 3, 4, 5) + 1000, dtype='float64')
-        B_chol = tfp.math.fill_triangular(np.arange(15)/25000)
+        theta_raw = np.arange(15) - 7.5
+        B_sd = tf.linalg.diag(tfp.bijectors.Softplus().forward(theta_raw[:5]))
+        B_corr_chol = tfp.bijectors.CorrelationCholesky().forward(theta_raw[5:])
+        B_chol = B_corr_chol @ B_sd
 
         kernel_val = kernels.gaussian_kernel(x1, x2, B_chol)
         expected_weights = np.zeros((2, 3, 10, 4))
@@ -66,14 +72,10 @@ class Test_Gaussian_Kernel(unittest.TestCase):
                 for i in range(10):
                     temp = kernel_val.numpy()[b1, b2, i, :]
                     expected_weights[b1, b2, i, :] = temp / np.sum(temp)
-                # for j in range(4):
-                #     temp = kernel_val.numpy()[b1, b2, :, j]
-                #     expected_weights[b1, b2, :, j] = temp / np.sum(temp)
-
 
         actual_weights = kernels.kernel_weights(
             x1, x2,
-            np.arange(15)/25000,
+            theta_raw,
             kernel = 'gaussian_full')
 
         # actual matches expected
@@ -82,3 +84,6 @@ class Test_Gaussian_Kernel(unittest.TestCase):
         # within batches and x2 observations, weights sum to 1 across x1 observations
         self.assertTrue(np.all(np.abs(tf.reduce_sum(actual_weights, axis=-1).numpy() - np.ones((2, 3, 10))) < 1e-12))
 
+
+if __name__ == '__main__':
+    unittest.main()
