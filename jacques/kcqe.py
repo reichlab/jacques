@@ -93,7 +93,7 @@ class KCQE(jacques):
                                          theta_b=param_dict['x_bw_raw'],
                                          kernel=self.x_kernel)
         
-        return kernels.kernel_quantile_fn(y=tf.expand_dims(y_train, -2), # will be broadcast to match shape of w_train
+        return kernels.kernel_quantile_fn(y=y_train,
                                           w=w_train,
                                           tau=tau,
                                           theta_b_raw=param_dict['y_bw_raw'])

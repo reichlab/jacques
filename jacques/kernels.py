@@ -253,7 +253,9 @@ def kernel_quantile_fn(y, w, tau, theta_b_raw):
     ------
     y: tensor of shape `(batch_shape) + (n_train,)` with observed values of the
         target variable.
-    w: tensor of shape `(batch_shape) + (n_test, n_train)` with observation weights
+    w: tensor of shape `(batch_shape) + (n_test, n_train)` with observation
+        weights. Within each batch and test set observation, weights should sum
+        to 1 (i.e., they should sum to 1 along the last axis).
     tau: tensor of length `k` with probability levels at which to extract
         quantile estimates
     theta_b_raw: scalar with bandwidth parameter on "raw" scale, i.e.,
@@ -261,7 +263,7 @@ def kernel_quantile_fn(y, w, tau, theta_b_raw):
     
     Returns
     -------
-    tensor of shape `(batch_shape, k)` with estimated quantiles
+    tensor of shape `(batch_shape) + (n_test, k)` with estimated quantiles
     
     Notes
     -----
@@ -273,9 +275,9 @@ def kernel_quantile_fn(y, w, tau, theta_b_raw):
     bw = quantile_smooth_bw(tau, theta_b_raw)
     
     # reshape tau and bw to (1, ..., 1, k, 1), where the number of leading
-    # ones matches the length of the batch size, for later broadcasting
-    # with w
-    target_tau_shape = tuple([1 for i in range(batch_dims)]) + (len(tau), 1)
+    # ones matches the length of the batch size plus 1, for later broadcasting
+    # with w. The shape axes correspond to (batches, test, quantiles, train)
+    target_tau_shape = tuple([1 for i in range(batch_dims)]) + (1, len(tau), 1)
     tau = tf.reshape(tau, target_tau_shape)
     bw = tf.reshape(bw, target_tau_shape)
     
@@ -284,27 +286,34 @@ def kernel_quantile_fn(y, w, tau, theta_b_raw):
     # generator rather than repeated sorts within this function
     sorted_indx = tf.argsort(y, axis=-1)
     y_sorted = tf.gather(y, sorted_indx, batch_dims=batch_dims)
-    w_sorted = tf.gather(w, tf.broadcast_to(sorted_indx, w.shape), batch_dims=batch_dims)
+    w_sorted = tf.gather(
+        w,
+        tf.broadcast_to(tf.expand_dims(sorted_indx, -2), w.shape),
+        batch_dims=batch_dims + 1)
     
-    # expand w's shape to (batch_shape) + (1, n) for later
+    # expand w's shape to (batch_shape) + (n_test, 1, n_train) for later
     # broadcasting with tau and bw,
-    # and expand y's shape to (batch_shape) + (n, 1) for later
-    # (batched) matrix multiplication with U_diff
-    y_sorted = tf.expand_dims(y_sorted, -1)
+    # and expand y's shape to (batch_shape) + (1, n_train, 1) for later
+    # (batched) matrix multiplication with U_diff. The trailing dimension of 1
+    # is just there to make y_sorted a column vector for purposes of multiplication
     w_sorted = tf.expand_dims(w_sorted, -2)
+    y_sorted = tf.expand_dims(y_sorted, -2)
+    y_sorted = tf.expand_dims(y_sorted, -1)
     
-    # calculate cumulative weights and prepend zero; shape is (batch_shape) + (1, n + 1)
+    # calculate cumulative weights and prepend zero;
+    # final shape is (batch_shape) + (n_test, 1, n_train + 1)
     cum_w = tf.concat(
         [tf.zeros(w_sorted.shape[:-1] + (1,), dtype=w.dtype), tf.cumsum(w_sorted, axis=-1)],
         axis = -1)
+    # cum_w = tf.expand_dims(cum_w, -3)
     
-    # calculate U, with shape (batch_shape) + (k, n + 1)
+    # calculate U, with shape (batch_shape) + (n_test, k, n_train + 1)
     U = integrated_epanechnikov((tau - cum_w) / bw)
     
-    # calculate U_diff, with shape (batch_shape) + (k, n)
+    # calculate U_diff, with shape (batch_shape) + (n_test, k, n_train)
     U_diff = U[..., :-1] - U[..., 1:]
     
-    # calculate U_diff * y_sorted, with shape (batch_shape) + (k, 1);
+    # calculate U_diff * y_sorted, with shape (batch_shape) + (n_test, k, 1);
     # then, drop trailing dimension
     result = tf.matmul(U_diff, y_sorted)
     result = tf.squeeze(result, axis=-1)
