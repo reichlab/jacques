@@ -1,3 +1,4 @@
+from socket import AddressFamily
 import pandas as pd
 import numpy as np
 import tensorflow as tf
@@ -8,9 +9,9 @@ import pickle
 
 
 class jacques(abc.ABC):
-    def generator(self, x_train_val, y_train_val, batch_size, block_size):
+    def single_batch_generator(self, x_train_val, y_train_val, block_size):
         """
-        Training/validation set data generator
+        Training/validation set data generator for one batch at a time
 
         Parameters
         ----------
@@ -24,8 +25,6 @@ class jacques(abc.ABC):
         y_train_val: 2D tensor with length (L, T)
             Each value is a forecast target variable value in the training set.
             y_{l, t} = z_{l, 1, t+h}
-        batch_size: integer
-            Number of blocks in each batch. Each block has size of block_size
         block_size: integer
             Number of consecutive time points in a block.
         
@@ -47,9 +46,6 @@ class jacques(abc.ABC):
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
-
-        assert batch_size == 1
-
         leftover = y_train_val.shape[1] % block_size
             
         block_start_index = np.arange(start = leftover, stop = y_train_val.shape[1], step = block_size)
@@ -118,7 +114,58 @@ class jacques(abc.ABC):
             i += 1
 
             yield x_val, x_train, y_val, y_train
-       
+    
+    
+    def generator(self, x_train_val, y_train_val, batch_size, block_size):
+        """
+        Training/validation set data generator
+
+        Parameters
+        ----------
+        x_train_val: 3D tensor with shape (L, T, P) 
+            L is the number of location l and T is the number of time point t for which
+            the full feature vector x_{l,t}, possibly including lagged covariate values,
+            and the response y_{l,t}, corresponding to the target variable at time t+h,
+            could be calculated. P is number of features.
+            Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair 
+            (l, t) in the training set.
+        y_train_val: 2D tensor with length (L, T)
+            Each value is a forecast target variable value in the training set.
+            y_{l, t} = z_{l, 1, t+h}
+        batch_size: integer
+            Number of blocks in each batch. Each block has size of block_size
+        block_size: integer
+            Number of consecutive time points in a block.
+        
+        Returns
+        -------
+        x_val: 3D tensor with shape (batch_size = 1, N, P) 
+            N is the number of combinations of location l and time point t in 
+            a block of feature vector x_train_val. P is the number of features.
+        y_val: 2D tensor with shape (batch_size = 1, N)
+            Corresponding obseration data of x_val
+        x_train: 3D tensor with shape (batch_size = 1, N', P)
+            N' is the number of combinations of location l and time point t in 
+            the remaining blocks of feature vector x_train_val.
+            P is the number of features.
+            If x_val is the leading/ending block, 
+            then x_train has the remaining blocks = all blocks - x_val - one neighbor block of x_val
+            if x_val is a middle block, 
+            then x_train has the remaining blocks = all blocks - x_val - two adjacent blocks of x_val
+        y_train: 2D tensor with shape (batch_size = 1, N')
+            Corresponding obseration data of x_train
+        """
+        gen = self.single_batch_generator(x_train_val, y_train_val, block_size)
+
+        while True:
+            xs_and_ys = [next(gen) for i in range(batch_size)]
+            x_val = tf.concat([xy[0] for xy in xs_and_ys], axis = 0)
+            x_train = tf.concat([xy[1] for xy in xs_and_ys], axis = 0)
+            y_val = tf.concat([xy[2] for xy in xs_and_ys], axis = 0)
+            y_train = tf.concat([xy[3] for xy in xs_and_ys], axis = 0)
+            yield x_val, x_train, y_val, y_train
+            AddressFamily
+    
     
     def init_xval_split(self, data, target_var, h=1, block_size=21, batch_size=1):
         """

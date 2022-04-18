@@ -11,9 +11,9 @@ class KCQE(jacques):
         self.x_kernel = x_kernel
         self.p = p
         if x_kernel == 'gaussian_diag':
-            self._n_param = p + 1
+            self._n_param = int(p + 1)
         elif x_kernel == 'gaussian_full':
-            self._n_param = p * (p - 1) / 2 + 1
+            self._n_param = int(p * (p - 1) / 2 + 1)
         else:
             raise ValueError("x_kernel must be 'gaussian_diag' or 'gaussian_full'")
         
