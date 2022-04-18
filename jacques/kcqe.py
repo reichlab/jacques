@@ -13,7 +13,7 @@ class KCQE(jacques):
         if x_kernel == 'gaussian_diag':
             self._n_param = int(p + 1)
         elif x_kernel == 'gaussian_full':
-            self._n_param = int(p * (p - 1) / 2 + 1)
+            self._n_param = int(p * (p + 1) / 2 + 1)
         else:
             raise ValueError("x_kernel must be 'gaussian_diag' or 'gaussian_full'")
         
@@ -47,8 +47,8 @@ class KCQE(jacques):
         ------
         ValueError if len(param_vec) != self.n_param
         """
-        if param_vec.shape[0] != self._n_param:
-            raise ValueError("Require len(param_vec) == self.n_param")
+        if param_vec.shape[0] != self.n_param:
+            raise ValueError(f"Require len(param_vec) == self.n_param; got {param_vec.shape[0]} and {self.n_param}")
         
         return {
             'x_bw_raw': param_vec[:-1],

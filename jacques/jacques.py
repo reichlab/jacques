@@ -164,7 +164,6 @@ class jacques(abc.ABC):
             y_val = tf.concat([xy[2] for xy in xs_and_ys], axis = 0)
             y_train = tf.concat([xy[3] for xy in xs_and_ys], axis = 0)
             yield x_val, x_train, y_val, y_train
-            AddressFamily
     
     
     def init_xval_split(self, data, target_var, h=1, block_size=21, batch_size=1):
