@@ -342,7 +342,7 @@ class jacques(abc.ABC):
         # initialize init_param_vec
         if init_param_vec == None:
             # all zeros
-            init_param_vec = tf.constant(np.zeros(self.n_param))
+            init_param_vec = tf.constant(np.zeros(self.n_param), dtype=np.float32)
 
             # does not work well :(
             # He weight initialization
@@ -355,7 +355,7 @@ class jacques(abc.ABC):
         param_vec_var = tf.Variable(
             initial_value=init_param_vec,
             name='param_vec',
-            dtype=np.float64)
+            dtype=np.float32)
 
         # create optimizer
         if optim_method == "adam":
@@ -367,7 +367,7 @@ class jacques(abc.ABC):
         num_batches = math.ceil(num_blocks / batch_size)
         
         # initiate loss trace
-        lls_ = np.zeros(num_epochs * num_batches, np.float64)
+        lls_ = np.zeros(num_epochs * num_batches, np.float32)
         i=0
         
         # create a list of trainable variables

@@ -193,8 +193,8 @@ def quantile_smooth_bw(tau, theta_b_raw):
     # convert theta_b_raw to lie between 0 and 1;
     # theta_b \in (0, 0.25), so this represents 4 * theta_b
     theta_b_times_4 = tf.math.sigmoid(theta_b_raw)
-    theta_b_times_2 = theta_b_times_4 / tf.constant(np.array(2.0))
-    theta_b = theta_b_times_4 / tf.constant(np.array(4.0))
+    theta_b_times_2 = theta_b_times_4 / tf.constant(np.array(2.0), dtype=theta_b_raw.dtype)
+    theta_b = theta_b_times_4 / tf.constant(np.array(4.0), dtype=theta_b_raw.dtype)
     
     # binary masks:
     # lower_mask is 1.0 if tau < 2*theta_b and 0 otherwise
@@ -204,9 +204,9 @@ def quantile_smooth_bw(tau, theta_b_raw):
         tf.math.less(tau, theta_b_times_2),
         dtype = tau.dtype)
     upper_mask = tf.cast(
-        tf.math.greater(tau, tf.constant(np.array(1.)) - theta_b_times_2),
+        tf.math.greater(tau, tf.constant(np.array(1.), dtype=theta_b_raw.dtype) - theta_b_times_2),
         dtype = tau.dtype)
-    central_mask = tf.ones_like(tau) - lower_mask - upper_mask
+    central_mask = tf.ones_like(tau, dtype=tau.dtype) - lower_mask - upper_mask
     
     # calculate bandwidth as piecewise function of tau
     bw = tf.math.multiply(
@@ -227,19 +227,19 @@ def integrated_epanechnikov(z):
     # indicator of whether z \in (-1, 1)
     z_in_bounds = tf.cast(
         tf.logical_and(
-            tf.math.greater(z, tf.constant(np.array(-1.0))),
-            tf.math.less(z, tf.constant(np.array(1.0)))
+            tf.math.greater(z, tf.constant(np.array(-1.0), dtype = z.dtype)),
+            tf.math.less(z, tf.constant(np.array(1.0), dtype = z.dtype))
         ),
         dtype = z.dtype)
     
     # indicator of whether z > 1
     z_greater_1 = tf.cast(
-        tf.math.greater(z, tf.constant(np.array(1.0))),
+        tf.math.greater(z, tf.constant(np.array(1.0), dtype = z.dtype)),
         dtype = z.dtype)
     
     return tf.multiply(
-        tf.constant(np.array(0.5)) + tf.constant(np.array(0.75)) * z + \
-            tf.constant(np.array(-0.25)) * tf.math.pow(z, 3),
+        tf.constant(np.array(0.5), dtype = z.dtype) + tf.constant(np.array(0.75), dtype = z.dtype) * z + \
+            tf.constant(np.array(-0.25), dtype = z.dtype) * tf.math.pow(z, 3),
         z_in_bounds
     ) + z_greater_1
 
