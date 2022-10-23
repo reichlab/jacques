@@ -189,7 +189,7 @@ class jacques(abc.ABC):
         -------
         num_blocks: integer
             Total number of block could be created with given dataset
-        x_test: 2D tensor with shape (L, P)
+        x_test: 3D tensor with shape (L, 1, P)
             Each value is test set feature for each location at forecast date.
         xval_batch_gen: generator
             A generator initialized with x_train_val and y_train_val, block_size and batch_size
