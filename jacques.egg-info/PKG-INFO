@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: jacques
+Version: 0.0.1
+Summary: Just another conditional quantile estimator
+Home-page: https://github.com/reichlab/jacques
+Author: Serena Wang, Evan L. Ray
+Author-email: elray@umass.edu
+License-File: LICENSE
