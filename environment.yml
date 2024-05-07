@@ -6,4 +6,4 @@ dependencies:
     - numpy
     - pandas
     - tensorflow
-    - tensorflow_probability
+    - tensorflow-probability
