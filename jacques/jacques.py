@@ -82,20 +82,9 @@ class jacques(abc.ABC):
                 # why break the 0 to drop_block_start_idx into two lists, then concatenate?
                 # then concatenates the dropped block indexes up to the length of the y_train_val
                 if drop_block_start_idx > block_start_index[i] + 2 * block_size:
-                    train_idx = (
-                        list(range(0, block_start_index[i]))
-                        + list(
-                            range(
-                                block_start_index[i] + 2 * block_size,
-                                drop_block_start_idx,
-                            )
-                        )
-                        + list(
-                            range(
-                                drop_block_start_idx + block_size, y_train_val.shape[1]
-                            )
-                        )
-                    )
+                    train_idx = list(range(0, block_start_index[i])) \
+                        + list(range(block_start_index[i] + 2 * block_size, drop_block_start_idx)) \
+                        + list(range(drop_block_start_idx + block_size, y_train_val.shape[1]))
                 else:
                     # if they are equal
                     train_idx = list(range(0, block_start_index[i])) \
