@@ -59,7 +59,6 @@ class jacques(abc.ABC):
         num_blocks = len(block_start_index)
 
         i = 0
-        # QUESTION - while what is true?
         while True:
             if i % num_blocks == 0:
                 i = 0
