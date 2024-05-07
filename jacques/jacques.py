@@ -77,11 +77,13 @@ class jacques(abc.ABC):
                     )
                 )
 
-                # QUESTION: Can't figure out why on this step
-                # train_idx lists numbers from block start index[i] + 2 * block_size to the starting index of the dropped block
-                # why break the 0 to drop_block_start_idx into two lists, then concatenate?
-                # then concatenates the dropped block indexes up to the length of the y_train_val
                 if drop_block_start_idx > block_start_index[i] + 2 * block_size:
+                    # train_idx includes 3 groups of indices:
+                    # (1) everything up to the start of the first block, which was
+                    # selected as the validation block
+                    # (2) indices between the selected block plus a one-block buffer
+                    # and the start of the additional dropped block.
+                    # (3) any trailing indices after the end of the additional dropped block```
                     train_idx = list(range(0, block_start_index[i])) \
                         + list(range(block_start_index[i] + 2 * block_size, drop_block_start_idx)) \
                         + list(range(drop_block_start_idx + block_size, y_train_val.shape[1]))
