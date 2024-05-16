@@ -84,20 +84,9 @@ class jacques(abc.ABC):
                     # (2) indices between the selected block plus a one-block buffer
                     # and the start of the additional dropped block.
                     # (3) any trailing indices after the end of the additional dropped block```
-                    train_idx = (
-                        list(range(0, block_start_index[i]))
-                        + list(
-                            range(
-                                block_start_index[i] + 2 * block_size,
-                                drop_block_start_idx,
-                            )
-                        )
-                        + list(
-                            range(
-                                drop_block_start_idx + block_size, y_train_val.shape[1]
-                            )
-                        )
-                    )
+                    train_idx = list(range(0, block_start_index[i])) \
+                        + list(range(block_start_index[i] + 2 * block_size, drop_block_start_idx)) \
+                        + list(range(drop_block_start_idx + block_size, y_train_val.shape[1]))
                 else:
                     # if they are equal
                     train_idx = list(range(0, block_start_index[i])) + list(
