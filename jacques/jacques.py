@@ -112,9 +112,9 @@ class jacques(abc.ABC):
                     train_idx = list(range(0, block_start_index[i] - 2 * block_size))
             # if the middle block is selected as validation set
             else:
-                train_idx = list(range(0, block_start_index[i] - block_size)) + list(
-                    range(block_start_index[i] + 2 * block_size, y_train_val.shape[1])
-                )
+                train_idx = list(range(0, block_start_index[i] - block_size)) \
+                    + list(range(block_start_index[i] + 2 * block_size,
+                                 y_train_val.shape[1]))
 
             # gather results
             x_val = x_train_val[
