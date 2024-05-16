@@ -7,7 +7,6 @@ from . import kernels
 
 
 class KCQE(jacques):
-    #Sets the initial value of a KQCE object
     def __init__(self, x_kernel = 'gaussian_diag', p=1) -> None:
         self.x_kernel = x_kernel
         self.p = p
