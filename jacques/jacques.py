@@ -123,7 +123,8 @@ class jacques(abc.ABC):
 
             x_train = tf.gather(x_train_val, train_idx, axis=1)
             x_train = tf.reshape(
-                x_train, (x_train.shape[0] * x_train.shape[1], x_train.shape[2])
+                x_train,
+                (x_train.shape[0] * x_train.shape[1], x_train.shape[2])
             )
             x_train = tf.expand_dims(x_train, axis=0)
 
