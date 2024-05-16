@@ -104,12 +104,9 @@ class jacques(abc.ABC):
                 )
 
                 if drop_block_start_idx < block_start_index[i] - 2 * block_size:
-                    train_idx = list(range(0, drop_block_start_idx)) + list(
-                        range(
-                            drop_block_start_idx + block_size,
-                            block_start_index[i] - block_size,
-                        )
-                    )
+                    train_idx = list(range(0, drop_block_start_idx)) \
+                        + list(range(drop_block_start_idx + block_size,
+                                     block_start_index[i] - block_size))
                 else:
                     # if they are equal
                     train_idx = list(range(0, block_start_index[i] - 2 * block_size))
