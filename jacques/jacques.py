@@ -128,9 +128,7 @@ class jacques(abc.ABC):
             )
             x_train = tf.expand_dims(x_train, axis=0)
 
-            y_val = y_train_val[
-                :, block_start_index[i] : block_start_index[i] + block_size
-            ]
+            y_val = y_train_val[:, block_start_index[i] : block_start_index[i] + block_size]
             y_val = tf.reshape(y_val, [-1])
             y_val = tf.expand_dims(y_val, axis=0)
 
