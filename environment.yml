@@ -1,0 +1,9 @@
+name: jacques
+channels:
+    -  defaults
+dependencies:
+    - python=3.11
+    - numpy
+    - pandas
+    - tensorflow
+    - tensorflow-probability
