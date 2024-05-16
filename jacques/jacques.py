@@ -117,9 +117,7 @@ class jacques(abc.ABC):
                                  y_train_val.shape[1]))
 
             # gather results
-            x_val = x_train_val[
-                :, block_start_index[i] : block_start_index[i] + block_size, :
-            ]
+            x_val = x_train_val[:, block_start_index[i] : block_start_index[i] + block_size, :]
             x_val = tf.reshape(x_val, (x_val.shape[0] * x_val.shape[1], x_val.shape[2]))
             x_val = tf.expand_dims(x_val, axis=0)
 
