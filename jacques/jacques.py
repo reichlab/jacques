@@ -89,11 +89,8 @@ class jacques(abc.ABC):
                         + list(range(drop_block_start_idx + block_size, y_train_val.shape[1]))
                 else:
                     # if they are equal
-                    train_idx = list(range(0, block_start_index[i])) + list(
-                        range(
-                            block_start_index[i] + 3 * block_size, y_train_val.shape[1]
-                        )
-                    )
+                    train_idx = list(range(0, block_start_index[i])) \
+                        + list(range(block_start_index[i] + 3 * block_size, y_train_val.shape[1]))
             # if the last full block is selected as validation set
             elif block_start_index[i] == y_train_val.shape[1] - block_size:
                 # need to drop a random block from training set
