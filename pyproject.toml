@@ -1,0 +1,26 @@
+[project]
+name = "jacques"
+version = "0.1.0"
+description = "Just Another Conditional Quantile Estimator for disease forecasting"
+authors = [
+    {name = "Evan L. Ray", email = "elray@umass.edu"}
+]
+
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "pandas>=2.2.2",
+    "numpy>=1.26.1",
+    "tensorflow==2.16.1",
+    "tensorflow-probability==0.24.0",
+    "tf-keras==2.16",
+    "matplotlib>=3.9.0",
+]
+
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
