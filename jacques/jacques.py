@@ -46,6 +46,8 @@ class jacques(abc.ABC):
             Corresponding obseration data of x_train
         """
 
+
+
         # Leftover observations from splitting into equal blocks of size blocksize
         leftover = y_train_val.shape[1] % block_size
 
@@ -192,6 +194,10 @@ class jacques(abc.ABC):
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
+
+        x_train_val = tf.cast(x_train_val, tf.float32)
+        y_train_val = tf.cast(y_train_val, tf.float32)
+
         gen = self.single_batch_generator(x_train_val, y_train_val, block_size)
 
         while True:
