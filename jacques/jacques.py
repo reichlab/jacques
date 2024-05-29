@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-import abc
-import math
-import random
-import pickle
+    import abc
+    import math
+    import random
+    import pickle
 
 
 class jacques(abc.ABC):
@@ -194,9 +194,6 @@ class jacques(abc.ABC):
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
-
-        x_train_val = tf.cast(x_train_val, tf.float32)
-        y_train_val = tf.cast(y_train_val, tf.float32)
 
         gen = self.single_batch_generator(x_train_val, y_train_val, block_size)
 
@@ -435,6 +432,10 @@ class jacques(abc.ABC):
             for batch_ind in range(num_batches):
 
                 x_val, x_train, y_val, y_train = next(xval_batch_gen)
+
+                x_val = tf.cast(x_val, tf.float32)
+                x_train = tf.cast(x_train, tf.float32)
+                y_val = tf.cast(y_val, tf.float32)
 
                 with tf.GradientTape() as tape:
                     loss = self.pinball_loss_objective(param_vec=param_vec_var,
