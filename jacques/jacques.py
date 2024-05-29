@@ -50,9 +50,7 @@ class jacques(abc.ABC):
         leftover = y_train_val.shape[1] % block_size
 
         # removes leftover blocks from beginning, gives the index of each block split
-        block_start_index = np.arange(
-            start=leftover, stop=y_train_val.shape[1], step=block_size
-        )
+        block_start_index = np.arange(start=leftover, stop=y_train_val.shape[1], step=block_size)
 
         # Total number of blocks
         num_blocks = len(block_start_index)
@@ -69,12 +67,8 @@ class jacques(abc.ABC):
                 # take out block_start_index and the block after it out of choices
 
                 # chooses random block index to drop from block_start_index not including block i
-                drop_block_start_idx = random.choice(
-                    list(
-                        set(block_start_index)
-                        - set([block_start_index[i], block_start_index[i] + block_size])
-                    )
-                )
+                drop_block_start_idx = random.choice(list(set(block_start_index)
+                        - set([block_start_index[i], block_start_index[i] + block_size])))
 
                 if drop_block_start_idx > block_start_index[i] + 2 * block_size:
                     # train_idx includes 3 groups of indices:
@@ -357,8 +351,7 @@ class jacques(abc.ABC):
             estimates at each quantile level
         """
 
-    def fit(
-        self,
+    def fit(self,
         xval_batch_gen,
         num_blocks,
         tau,
@@ -369,8 +362,7 @@ class jacques(abc.ABC):
         init_param_vec=None,
         verbose=False,
         save_frequency=None,
-        save_path=None,
-    ):
+        save_path=None,):
         """
         Estimate model parameters
 
@@ -415,9 +407,7 @@ class jacques(abc.ABC):
             # init_param_vec = tf.constant(init_param_vec)
 
         # declare variable representing parameters to estimate
-        param_vec_var = tf.Variable(
-            initial_value=init_param_vec, name="param_vec", dtype=np.float32
-        )
+        param_vec_var = tf.Variable(initial_value=init_param_vec, name="param_vec", dtype=np.float32)
 
         # create optimizer
         if optim_method == "adam":
@@ -441,14 +431,12 @@ class jacques(abc.ABC):
                 x_val, x_train, y_val, y_train = next(xval_batch_gen)
 
                 with tf.GradientTape() as tape:
-                    loss = self.pinball_loss_objective(
-                        param_vec=param_vec_var,
+                    loss = self.pinball_loss_objective(param_vec=param_vec_var,
                         x_train=x_train,
                         y_train=y_train,
                         x_test=x_val,
                         y_test=y_val,
-                        tau=tau,
-                    )
+                        tau=tau,)
 
                 grads = tape.gradient(loss, trainable_variables)
                 grads, _ = tf.clip_by_global_norm(grads, 10.0)
