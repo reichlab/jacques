@@ -352,7 +352,8 @@ class jacques(abc.ABC):
             estimates at each quantile level
         """
 
-    def fit(self,
+    def fit(
+        self,
         xval_batch_gen,
         num_blocks,
         tau,
@@ -436,7 +437,8 @@ class jacques(abc.ABC):
                 y_val = tf.cast(y_val, tf.float32)
 
                 with tf.GradientTape() as tape:
-                    loss = self.pinball_loss_objective(param_vec=param_vec_var,
+                    loss = self.pinball_loss_objective(
+                        param_vec=param_vec_var,
                         x_train=x_train,
                         y_train=y_train,
                         x_test=x_val,
