@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-    import abc
-    import math
-    import random
-    import pickle
+import abc
+import math
+import random
+import pickle
 
 
 class jacques(abc.ABC):
@@ -45,8 +45,6 @@ class jacques(abc.ABC):
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
-
-
 
         # Leftover observations from splitting into equal blocks of size blocksize
         leftover = y_train_val.shape[1] % block_size

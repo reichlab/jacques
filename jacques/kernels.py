@@ -117,7 +117,7 @@ def gaussian_kernel(x1, x2, B_chol):
     diffs = diff_x_pairs(x1, x2)
     
     # product (x1 - x2)^T * B_chol
-    diff_chol_prod = tf.expand_dims(tf.matmul(diffs, B_chol, -1))
+    diff_chol_prod = tf.expand_dims(tf.matmul(diffs, B_chol), -1)
     
     # kernel value, exp[-1 * (x1 - x2)^T * B_chol * B_chol^T * (x1 - x2)]
     result = tf.exp(-1.0 * tf.matmul(diff_chol_prod, diff_chol_prod, transpose_a=True))
