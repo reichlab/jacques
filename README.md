@@ -43,5 +43,5 @@ and the dependencies required for running the [demo.ipynb](https://github.com/re
 
 ```
 # if you'd like to be able to run the demo notebook
-pip install -r requirements/doc-requirements.txt && pip install -e .
+pip install -r requirements/requirements-doc.txt && pip install -e .
 ```
