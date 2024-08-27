@@ -64,8 +64,8 @@ class KCQE(jacques):
         Inputs
         ------
         param_vec: tensor of shape `(self.n_param,)` with vector of parameters
-        x_train: tensor of shape `(batch_shape) + (n_train, p)` with training
-            set features
+        x_train: tensor or list of tensors of shape `(batch_shape) + (n_train, p)` with training
+            set features. If it is a list, each item is from a different data source.
         y_train: tensor of shape `(batch_shape) + (n_train,)` with training
             set response values
         x_test: tensor of shape `(batch_shape) + (n_test, p)` with test set
@@ -83,6 +83,8 @@ class KCQE(jacques):
         ValueError if the last dimension of `x_train` and `x_test` don't match
         `self.p`
         """
+
+
         if x_train.shape.as_list()[-1] != self.p or x_test.shape.as_list()[-1] != self.p:
             raise ValueError("x_train and x_test must contain self.p features in their last dimension")
         
