@@ -1,4 +1,3 @@
-from socket import AddressFamily
 import pandas as pd
 import numpy as np
 import tensorflow as tf
@@ -15,14 +14,14 @@ class jacques(abc.ABC):
 
         Parameters
         ----------
-        x_train_val: 3D tensor with shape (L, T, P)
+        x_train_val: 3D tensor with shape (L * D, T, P)
             L is the number of location l and T is the number of time point t for which
             the full feature vector x_{l,t}, possibly including lagged covariate values,
             and the response y_{l,t}, corresponding to the target variable at time t+h,
-            could be calculated. P is number of features.
+            could be calculated. P is number of features. D is the number of data sources.
             Each row is a vector x_{l,t} = [x_{l,t,1},...,x_{l,t,P}] of features for some pair
             (l, t) in the training set.
-        y_train_val: 2D tensor with length (L, T)
+        y_train_val: 2D tensor with length (L*D, T)
             Each value is a forecast target variable value in the training set.
             y_{l, t} = z_{l, 1, t+h}
         block_size: integer
@@ -51,15 +50,14 @@ class jacques(abc.ABC):
         leftover = y_train_val.shape[1] % block_size
 
         # removes leftover blocks from beginning, gives the index of each block split
-        block_start_index = np.arange(
-            start=leftover, stop=y_train_val.shape[1], step=block_size
-        )
+        block_start_index = np.arange(start=leftover, stop=y_train_val.shape[1], step=block_size)
 
         # Total number of blocks
         num_blocks = len(block_start_index)
 
         i = 0
         while True:
+            # if i== number of blocks, set i to 0 and shuffle the block_start_index
             if i % num_blocks == 0:
                 i = 0
                 np.random.shuffle(block_start_index)
@@ -70,12 +68,8 @@ class jacques(abc.ABC):
                 # take out block_start_index and the block after it out of choices
 
                 # chooses random block index to drop from block_start_index not including block i
-                drop_block_start_idx = random.choice(
-                    list(
-                        set(block_start_index)
-                        - set([block_start_index[i], block_start_index[i] + block_size])
-                    )
-                )
+                drop_block_start_idx = random.choice(list(set(block_start_index)
+                        - set([block_start_index[i], block_start_index[i] + block_size])))
 
                 if drop_block_start_idx > block_start_index[i] + 2 * block_size:
                     # train_idx includes 3 groups of indices:
@@ -136,6 +130,17 @@ class jacques(abc.ABC):
             y_train = tf.reshape(y_train, [-1])
             y_train = tf.expand_dims(y_train, axis=0)
 
+            # Drop any entries with missing data in either target or features
+            mask = tf.math.isfinite(x_val).all(axis=1) & tf.math.isfinite(y_val)
+
+            x_val = tf.boolean_mask(x_val, mask)
+            y_val = tf.boolean_mask(y_val, mask)
+
+            mask = tf.math.isfinite(x_train).all(axis=1) & tf.math.isfinite(y_train)
+            x_train = tf.boolean_mask(x_train, mask)
+            y_train = tf.boolean_mask(y_train, mask)
+
+
             i += 1
 
             yield x_val, x_train, y_val, y_train
@@ -179,6 +184,7 @@ class jacques(abc.ABC):
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
         """
+
         gen = self.single_batch_generator(x_train_val, y_train_val, block_size)
 
         while True:
@@ -188,48 +194,6 @@ class jacques(abc.ABC):
             y_val = tf.concat([xy[2] for xy in xs_and_ys], axis=0)
             y_train = tf.concat([xy[3] for xy in xs_and_ys], axis=0)
             yield x_val, x_train, y_val, y_train
-
-    def init_xval_split(self, data, target_var, h=1, block_size=21, batch_size=1):
-        """
-        Create training/validation set generator and test data
-
-        Parameters
-        ----------
-        data: data frame
-            It has columns location, date, and a column with the response variable to forecast.
-            This data frame needs to be sorted by location and date columns in ascending order.
-        target_var: string
-            Name of the column in the data frame with the forecast target variable.
-            Default to "inc_hosp"
-        h: integer
-            Forecast horizon. Default to 1
-        block_size: integer
-            Number of consecutive time points in a block. Default to 21.
-        batch_size: integer
-            Number of blocks in each batch. Each block has size of block_size. Default to 1.
-
-        Returns
-        -------
-        num_blocks: integer
-            Total number of block could be created with given dataset
-        x_test: 3D tensor with shape (L, 1, P)
-            Each value is test set feature for each location at forecast date.
-        xval_batch_gen: generator
-            A generator initialized with x_train_val and y_train_val, block_size and batch_size
-        """
-        x_train_val, y_train_val, x_test = featurize_data(data, target_var, h)
-
-        # calculate number of blocks
-        num_blocks = math.floor(y_train_val.shape[1] / block_size)
-
-        xval_batch_gen = self.generator(
-            x_train_val=x_train_val,
-            y_train_val=y_train_val,
-            block_size=block_size,
-            batch_size=batch_size,
-        )
-
-        return num_blocks, x_test, xval_batch_gen
 
     def pinball_loss(self, y, q, tau):
         """
@@ -350,8 +314,7 @@ class jacques(abc.ABC):
         init_param_vec=None,
         verbose=False,
         save_frequency=None,
-        save_path=None,
-    ):
+        save_path=None,):
         """
         Estimate model parameters
 
@@ -360,7 +323,7 @@ class jacques(abc.ABC):
         xval_batch_gen: generator
             Training/validation set data generator from the `generator()`.
         num_blocks: integer
-            Total number of block could be created with given dataset
+            Total number of blocks to be created with given dataset
         batch_size: integer
             Number of blocks in each batch. Each block has size of block_size. Default to 1.
             This means each gradient descent iteration sees forecasts for only one time block.
@@ -396,9 +359,7 @@ class jacques(abc.ABC):
             # init_param_vec = tf.constant(init_param_vec)
 
         # declare variable representing parameters to estimate
-        param_vec_var = tf.Variable(
-            initial_value=init_param_vec, name="param_vec", dtype=np.float32
-        )
+        param_vec_var = tf.Variable(initial_value=init_param_vec, name="param_vec", dtype=np.float32)
 
         # create optimizer
         if optim_method == "adam":
@@ -421,6 +382,10 @@ class jacques(abc.ABC):
 
                 x_val, x_train, y_val, y_train = next(xval_batch_gen)
 
+                x_val = tf.cast(x_val, tf.float32)
+                x_train = tf.cast(x_train, tf.float32)
+                y_val = tf.cast(y_val, tf.float32)
+
                 with tf.GradientTape() as tape:
                     loss = self.pinball_loss_objective(
                         param_vec=param_vec_var,
@@ -428,8 +393,7 @@ class jacques(abc.ABC):
                         y_train=y_train,
                         x_test=x_val,
                         y_test=y_val,
-                        tau=tau,
-                    )
+                        tau=tau,)
 
                 grads = tape.gradient(loss, trainable_variables)
                 grads, _ = tf.clip_by_global_norm(grads, 10.0)
