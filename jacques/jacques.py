@@ -44,7 +44,7 @@ class jacques(abc.ABC):
             then x_train has the remaining blocks = all blocks - x_val - two adjacent blocks of x_val
         y_train: 2D tensor with shape (batch_size = 1, N')
             Corresponding obseration data of x_train
-        """ 
+        """
 
         # Leftover observations from splitting into equal blocks of size blocksize
         leftover = y_train_val.shape[1] % block_size
