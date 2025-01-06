@@ -18,7 +18,7 @@ Follow the directions below to set this project up on your local machine.
 2. Create a Python virtual environment.
 
 ```
-python m venv .venv
+python -m venv .venv
 ```
 
 3. Activate the virual environment.
@@ -32,16 +32,14 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-4. Install the project's dependencies, which include the `jacques` dependencies:
+4. Install the project's dependencies (including installing the project as an editable package):
 
 ```
-# if only need the dependencies necessary to run jacques
-pip install -r requirements/requirements.txt && pip install -e .
+pip install -e . && pip install -r requirements/requirements.txt
 ```
-
-and the dependencies required for running the [demo.ipynb](https://github.com/reichlab/jacques/blob/BWRedits/demo.ipynb):
+or to install the dev requirements,
 
 ```
-# if you'd like to be able to run the demo notebook
-pip install -r requirements/requirements-doc.txt && pip install -e .
+pip install -e . && pip install -r requirements/requirements-dev.txt
 ```
+

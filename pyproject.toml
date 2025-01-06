@@ -11,15 +11,21 @@ readme = "README.md"
 license = {text = "MIT"}
 
 dependencies = [
-    "pandas>=2.2.2",
-    "numpy>=1.26.1",
-    "tensorflow>=2.16.1,<3",
-    "tensorflow-probability>=0.24.0",
+    "pandas",
+    "numpy",
+    "tensorflow",
+    "tensorflow-probability",
+    "pytest",
+    "tf-keras",
+    "polars",
 ]
 
 [project.optional-dependencies]
-doc = [
-     "matplotlib>=3.9.0",
+dev = [
+    'mypy',
+    'pytest',
+    'pytest-mock',
+    'ruff',
 ]
 
 
@@ -27,3 +33,9 @@ doc = [
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.ruff]
+line-length = 120
+lint.extend-select = ['I']
+
+[tools.setuptools]
+packages = ['jacques']
