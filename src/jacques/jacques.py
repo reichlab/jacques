@@ -131,12 +131,12 @@ class jacques(abc.ABC):
             y_train = tf.expand_dims(y_train, axis=0)
 
             # Drop any entries with missing data in either target or features
-            mask = tf.reduce_all(~tf.math.is_nan(x_val), axis = -1) & tf.math.is_nan(y_val)
+            mask = tf.reduce_all(~tf.math.is_nan(x_val), axis = -1) & tf.reduce_all(~tf.math.is_nan(y_val), axis = -1)
 
             x_val = tf.boolean_mask(x_val, mask)
             y_val = tf.boolean_mask(y_val, mask)
 
-            mask = tf.reduce_all(~tf.math.is_nan(x_train), axis = -1) & tf.math.is_nan(y_train)
+            mask = tf.reduce_all(~tf.math.is_nan(x_train), axis = -1) & tf.reduce_all(~tf.math.is_nan(y_train), axis = -1)
             x_train = tf.boolean_mask(x_train, mask)
             y_train = tf.boolean_mask(y_train, mask)
 
