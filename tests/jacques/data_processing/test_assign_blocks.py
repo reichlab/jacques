@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from jacques.data_processing import date_block_map
+from jacques.data_processing import date_block_map, assign_blocks
 
 
 @pytest.fixture
@@ -84,3 +84,27 @@ def test_df_with_duplicate_times():
 #     assert block_list[0]['target'].shape == (3,1)
 #     assert block_list[1]['features'].shape == (2, 2)
 #     assert block_list[1]['target'].shape == (2,1)
+
+
+def test_assign_blocks():
+    # Create test data
+    df = pd.DataFrame({'date': ['2022-01-06', '2022-01-13', '2022-01-20', '2022-01-27', '2022-02-03'],
+                       'location': [1, 2, 3, 4, 1],
+                       'x0': [0, 1, 0, 1, 1],
+                       'x1': [0, 1, 0, 1, 1],
+                       'target': [10.0, 10.5, 10.0, 10.5, 12]})
+    
+    features = ['x0', 'x1']
+    target = 'target'
+    num_blocks = 2
+    time_var = 'date'
+
+    # Assign blocks
+    block_list = assign_blocks(df, time_var, features, target, num_blocks)
+
+    # Check the output
+    assert len(block_list) == 2
+    assert block_list[0]['features'].shape == (3, 2)
+    assert block_list[0]['target'].shape == (3,1)
+    assert block_list[1]['features'].shape == (2, 2)
+    assert block_list[1]['target'].shape == (2,1)

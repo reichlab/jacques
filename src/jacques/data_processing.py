@@ -3,7 +3,7 @@ import random
 import pandas as pd
 import polars as pl
 import tensorflow as tf
-
+import numpy as np
 
 def date_block_map(df, time_var, num_blocks):
     """
@@ -51,6 +51,8 @@ def date_block_map(df, time_var, num_blocks):
     return block_map
 
 
+
+
 def assign_blocks(df, time_var, features, target, num_blocks):
     """
     Assigns each time point in the dataset to a block
@@ -84,67 +86,36 @@ def assign_blocks(df, time_var, features, target, num_blocks):
     return block_list
 
 
-def generate_train_blocks(num_blocks):
+def validation_training_pairings(num_blocks):
     """
-    Generator, which iterates through validation blocks and identifies which training blocks to use.
-    For each validation block, we will remove 3 blocks (generally the selected block and the 2 adjacent blocks)
-
     Parameters
     __________
     num_blocks: integer
         Total number of blocks to be created with given dataset
-
-    Yields:
-    ________
-
-    train_blocks: list
-    
-    """
-    # For each validation block, we will remove 3 blocks (generally the selected block and the 2 adjacent blocks)
-    for i in range(num_blocks):
-        # Initialize list of ones to signify which training blocks will correspond to each validation block
-        train_blocks = [1] * num_blocks
-        if i == 0:
-            # For the first block, we drop the first two blocks and then a radom one selected from the remaining
-            random_block = random.randint(2, num_blocks - 1)
-            train_blocks[0], train_blocks[1], train_blocks[random_block] = 0, 0, 0
-            yield train_blocks
-        elif i == num_blocks - 1:
-            # For the last block, we drop the last two blocks and then a radom one selected from the remaining
-            random_block = random.randint(0, num_blocks - 3)
-            train_blocks[-1], train_blocks[-2], train_blocks[random_block] = 0, 0, 0
-            yield train_blocks
-        else:
-            # For all other blocks, we drop the selected block and the two adjacent blocks
-            train_blocks[i - 1], train_blocks[i], train_blocks[i + 1] = 0, 0, 0
-            yield train_blocks
-    
-# Now a function that returns the training and test set block numbers for each batch
-def train_blocks_design(num_blocks):
-    """
-    Iterates through the block assignment generator and returns a dataframe with the training and test block assignments for each batch.
-
-    Parameters
-    __________
-    num_blocks: integer
-        Total number of blocks to be created with given dataset
-    batch_size: integer
-        Number of blocks in each batch. Each block has size of block_size. Default to 1.
-        This means each gradient descent iteration sees forecasts for only one time block.
 
     Returns
-    ________
-    block_assignments: pandas dataframe
-        (num_blocks x num_blocks) Dataframe with training and test block assignments for each batch
-        Row i corresponds to the block assignments when block i is the validation block.
-        Entry i, j  is a 1 if block j is used as a training block when block i si the validation block, and 0 otherwise.
-
+    __________
+    matrix: 2D numpy array
+        A matrix identifying which training blocks to use for each validation block.
+        Entry i,j is 1 if the jth block is used for training when the ith block is used for validation, and 0 otherwise.
     """
-    #initialize array, num_blocks by num_blocks
-    block_assignments = []
-    block_generator = generate_train_blocks(num_blocks)
+    if(num_blocks < 4):
+        raise ValueError("Number of blocks must be greater than 3")
+    # Create an n x n matrix filled with 1s
+    matrix = np.ones((num_blocks, num_blocks), dtype=int)
+    
+    # Set the main diagonal and the two adjacent diagonals to 0
+    np.fill_diagonal(matrix, 0)
+    np.fill_diagonal(matrix[1:], 0)
+    np.fill_diagonal(matrix[:, 1:], 0)
+    
+    #For the first block, we remove the following block, and one random block from the rest
+    matrix[0, random.randint(2, num_blocks - 1)] = 0 
 
-    for row in block_generator:
-        block_assignments.append(row)
+    # For the last block, we remove the previous block, and one random block from the rest
+    matrix[num_blocks - 1, random.randint(0, num_blocks - 3)] = 0
 
-    return pd.DataFrame(block_assignments)
+    return matrix
+
+
+
