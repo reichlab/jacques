@@ -4,6 +4,13 @@ import pandas as pd
 import polars as pl
 import tensorflow as tf
 import numpy as np
+from jacques.kernels import diff_x_pairs
+import pickle
+from pathlib import Path
+
+# Paths
+PROJ_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJ_ROOT / "data"
 
 def date_block_map(df, time_var, num_blocks):
     """
@@ -117,5 +124,26 @@ def validation_training_pairings(num_blocks):
 
     return matrix
 
+def calc_diffs_one_validation_block(list_of_tensors, num_blocks):
+    """
+    Calculate the differences between the test block and all the training blocks
+    """
 
+    # We only need to go up to num_blocks-2 because at that point we've calculated all relevant differences
+    for i in range(num_blocks):
+        diffs = []
+        for j in range(num_blocks):
+            if(j <= (i + 1)):
+                diffs.append(None)
+            elif(j > (i+1)):
+                # Get pairwised differences between each row in the training block and the test block
+                diffs.append(diff_x_pairs(list_of_tensors[i], list_of_tensors[j]))
+        yield diffs
+
+def calc_and_store_diffs(list_of_tensors):
+    """
+    Calculate and store the differences between all pairs of blocks in the dataset
+    """
+
+    pass
 
