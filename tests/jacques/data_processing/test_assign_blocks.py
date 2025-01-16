@@ -46,6 +46,7 @@ def test_no_blocks(sample_df):
     with pytest.raises(ValueError, match="Number of blocks must be greater than zero."):
         date_block_map(sample_df, 'time', 0)
 
+
 def test_empty_df():
     """Test with an empty dataframe."""
     empty_df = pd.DataFrame({'time': []})
