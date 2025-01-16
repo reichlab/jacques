@@ -117,19 +117,42 @@ def validation_training_pairings(num_blocks):
 
     return matrix
 
-def calc_diffs_one_validation_block(list_of_tensors, num_blocks):
+# Note that when implemented, this will need to be passed only the features from the block_list
+def calc_diffs_one_train_block(features_list, test_block, train_blocks_mask, distance_metric = "difference"):
     """
-    Calculate the differences between the test block and all the training blocks
+    Parameters
+    __________
+    list_of_tensors: list of tensors
+        List of tensors containing the features and target values for each block
+    test_block: integer
+        The block to be used for training
+    validation_training_pairings: 2D numpy array
+        A matrix identifying which training blocks to use for each validation block.
+        Entry i,j is 1 if the jth block is used for training when the ith block is used for validation, and 0 otherwise.
+
+
+    Returns
+    _______
+    diffs: list of tensors
+        List of tensors containing the differences between the test blocks and a training block
     """
 
-    # We only need to go up to num_blocks-2 because at that point we've calculated all relevant differences
-    for i in range(num_blocks):
-        diffs = []
-        for j in range(num_blocks):
-            if(j <= (i + 1)):
-                diffs.append(None)
-            elif(j > (i+1)):
-                # Get pairwised differences between each row in the training block and the test block
-                diffs.append(diff_x_pairs(list_of_tensors[i], list_of_tensors[j]))
-        yield diffs
+    
+    train_blocks = [block for block, keep in zip(features_list, train_blocks_mask) if keep]
+    test_block = features_list[test_block]
 
+    if distance_metric is "difference":
+        diffs = [diff_x_pairs(test_block, train_block) for train_block in train_blocks]
+    
+    # Here we can add functionality for distance or for dot product similarity (Or should this go in diff_x_pairs?)
+    else:
+        raise ValueError("Invalid distance metric")
+
+    return diffs
+
+
+def calc_diffs_all_train_blocks(block_list, distance_metric):
+
+    all_diffs = [calc_diffs_one_train_block(block_list, test_block, validation_training_pairings[test_block], distance_metric) for test_block in range(len(block_list))]
+
+    return all_diffs

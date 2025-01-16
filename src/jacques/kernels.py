@@ -113,7 +113,7 @@ def gaussian_kernel(x1, x2, B_chol):
         raise ValueError("B_chol must be a square matrix")
 
     # calculate differences in features for all pairs in batches of x1, x2
-    diffs = diff_x_pairs(x1, x2)
+    diffs = diff_x_pairs(x1, x2)                                  
     
     # product (x1 - x2)^T * B_chol
     diff_chol_prod = tf.expand_dims(tf.matmul(diffs, B_chol), -1)
@@ -167,6 +167,14 @@ def kernel_weights(x1, x2, theta_b, kernel = 'gaussian_diag'):
     weights = kernel_vals / \
         tf.math.reduce_sum(kernel_vals, axis = -1, keepdims=True)
     
+    return weights
+
+
+def kernel_weights2(block_list):
+    
+    features_list = [d['features'] for d in block_list]
+    weights = []
+
     return weights
 
 
@@ -318,4 +326,3 @@ def kernel_quantile_fn(y, w, tau, theta_b_raw):
     result = tf.squeeze(result, axis=-1)
     
     return result
-
