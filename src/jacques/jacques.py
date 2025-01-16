@@ -136,7 +136,7 @@ class jacques(abc.ABC):
             x_val = tf.boolean_mask(x_val, mask)
             y_val = tf.boolean_mask(y_val, mask)
 
-            mask = tf.reduce_all(~tf.math.is_nan(x_train), axis = -1) & tf.reduce_all(~tf.math.is_nan(y_train), axis = -1)
+            mask = tf.reduce_all(~tf.math.is_nan(x_train), axis = -1) & ~tf.math.is_nan(y_train)
             x_train = tf.boolean_mask(x_train, mask)
             y_train = tf.boolean_mask(y_train, mask)
 
