@@ -31,6 +31,7 @@ def test_with_leftovers(sample_df):
     assert block_values.count(1) == 3
     assert block_values.count(2) == 3
 
+
 def test_single_block(sample_df):
     """Test with a single block."""
     block_map = date_block_map(sample_df, 'time', 1)  # All points should go to block 0
