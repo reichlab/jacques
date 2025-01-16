@@ -109,6 +109,6 @@ def test_assign_blocks():
     # Check the output
     assert len(block_list) == 2
     assert block_list[0]['features'].shape == (3, 2)
-    assert block_list[0]['target'].shape == (3,1)
+    assert block_list[0]['target'].shape == (3, 1)
     assert block_list[1]['features'].shape == (2, 2)
-    assert block_list[1]['target'].shape == (2,1)
+    assert block_list[1]['target'].shape == (2, 1)
