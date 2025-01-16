@@ -1,16 +1,11 @@
-import numpy as np
 import random
-import pandas as pd
+
+import numpy as np
 import polars as pl
 import tensorflow as tf
-import numpy as np
-from jacques.kernels import diff_x_pairs
-import pickle
-from pathlib import Path
 
-# Paths
-PROJ_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJ_ROOT / "data"
+from jacques.kernels import diff_x_pairs
+
 
 def date_block_map(df, time_var, num_blocks):
     """
@@ -56,8 +51,6 @@ def date_block_map(df, time_var, num_blocks):
     block_map = dict(zip(unique_times, block_assignments))
     
     return block_map
-
-
 
 
 def assign_blocks(df, time_var, features, target, num_blocks):
@@ -139,11 +132,4 @@ def calc_diffs_one_validation_block(list_of_tensors, num_blocks):
                 # Get pairwised differences between each row in the training block and the test block
                 diffs.append(diff_x_pairs(list_of_tensors[i], list_of_tensors[j]))
         yield diffs
-
-def calc_and_store_diffs(list_of_tensors):
-    """
-    Calculate and store the differences between all pairs of blocks in the dataset
-    """
-
-    pass
 

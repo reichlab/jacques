@@ -1,16 +1,15 @@
+import os
 import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+import unittest
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-import unittest
 
 from jacques import kernels
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+sys.path.append(os.path.join(os.path.dirname(__file__), '..')) 
 
 class Test_Gaussian_Kernel(unittest.TestCase):
     def test_diff_x_pairs(self):

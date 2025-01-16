@@ -1,10 +1,10 @@
-import pandas as pd
-import numpy as np
-import tensorflow as tf
 import abc
 import math
-import random
 import pickle
+import random
+
+import numpy as np
+import tensorflow as tf
 
 
 class jacques(abc.ABC):
@@ -347,7 +347,7 @@ class jacques(abc.ABC):
             Defaults to None. Path to save parameter estimation snapshots.
         """
         # initialize init_param_vec
-        if init_param_vec == None:
+        if init_param_vec is None:
             # all zeros
             init_param_vec = tf.constant(np.zeros(self.n_param), dtype=np.float32)
 

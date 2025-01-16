@@ -1,6 +1,7 @@
-import pytest
 import tensorflow as tf
+
 from jacques.kernels import diff_x_pairs
+
 
 # Test for diff_x_pairs
 def test_diff_x_pairs():

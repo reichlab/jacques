@@ -5,7 +5,7 @@ This Python module provides code to implement Jacques forecasting model.
 
 ### Prerequisites
 Before setting up this project:   
-    -  Python Version: Your machine will need to have an installed version of python that mets the `requires-python` constraint in [pyproject.toml](https://github.com/reichlab/jacques/blob/BWRedits/pyproject.toml).  
+    -  Python Version: Your machine will need to have an installed version of python that meets the `requires-python` constraint in [pyproject.toml](https://github.com/reichlab/jacques/blob/BWRedits/pyproject.toml).  
     -  That version of Python should be set as your current Python interpreter. 
 
 ## Installing the package

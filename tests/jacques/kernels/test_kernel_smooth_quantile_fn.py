@@ -1,13 +1,12 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+import unittest
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_probability as tfp
-import unittest
 
 from jacques import kernels
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 class Test_Kernel_Smooth_Quantile_Fn(unittest.TestCase):
     def test_quantile_smooth_bw(self):

@@ -1,9 +1,5 @@
-import numpy as np
-import tensorflow as tf
-from .jacques import jacques
-import tensorflow_probability as tfp
-
 from . import kernels
+from .jacques import jacques
 
 
 class KCQE(jacques):

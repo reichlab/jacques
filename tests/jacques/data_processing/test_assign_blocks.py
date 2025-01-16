@@ -1,6 +1,7 @@
-import pytest
 import pandas as pd
-from jacques.data_processing import date_block_map, assign_blocks
+import pytest
+
+from jacques.data_processing import assign_blocks, date_block_map
 
 
 @pytest.fixture
