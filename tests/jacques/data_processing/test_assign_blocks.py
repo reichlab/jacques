@@ -53,6 +53,7 @@ def test_empty_df():
     with pytest.raises(ValueError, match="Input dataframe is empty."):
         date_block_map(empty_df, 'time', 3)
 
+
 def test_df_with_duplicate_times():
     """Test with a dataframe containing duplicate time entries."""
     df_with_duplicates = pd.DataFrame({
