@@ -40,6 +40,7 @@ def test_single_block(sample_df):
     block_values = list(block_map.values())
     assert block_values == [0] * 10
 
+
 def test_no_blocks(sample_df):
     """Test with num_blocks = 0, which should raise an error."""
     with pytest.raises(ValueError, match="Number of blocks must be greater than zero."):
