@@ -86,7 +86,7 @@ def assign_blocks(df, time_var, features, target, num_blocks):
     return block_list
 
 
-def validation_training_pairings(num_blocks):
+def train_test_pairings(num_blocks):
     """
     Parameters
     __________
@@ -141,7 +141,7 @@ def calc_diffs_one_train_block(features_list, test_block, train_blocks_mask, dis
     train_blocks = [block for block, keep in zip(features_list, train_blocks_mask) if keep]
     test_block = features_list[test_block]
 
-    if distance_metric is "difference":
+    if distance_metric == "difference":
         diffs = [diff_x_pairs(test_block, train_block) for train_block in train_blocks]
     
     # Here we can add functionality for distance or for dot product similarity (Or should this go in diff_x_pairs?)
@@ -152,7 +152,23 @@ def calc_diffs_one_train_block(features_list, test_block, train_blocks_mask, dis
 
 
 def calc_diffs_all_train_blocks(block_list, distance_metric):
+    """
+    Parameters
+    __________
+    block_list: list of feature values for each block
+        Each dictionary contains the features and target values for a given block
+    distance_metric: str
+        A string specifying which distance metric to use. Default is "difference"
 
-    all_diffs = [calc_diffs_one_train_block(block_list, test_block, validation_training_pairings[test_block], distance_metric) for test_block in range(len(block_list))]
+    Returns
+    _______
+    all_diffs: list of lists of tensors
+        A list of lists of tensors containing the differences between the test blocks and a training block
+    
+    """
+    num_blocks = len(block_list)
+
+    train_test_matrix = train_test_pairings(num_blocks)
+    all_diffs = [calc_diffs_one_train_block(block_list, test_block, train_test_matrix[test_block], distance_metric) for test_block in range(num_blocks)]
 
     return all_diffs
