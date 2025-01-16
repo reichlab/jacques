@@ -16,7 +16,6 @@ dependencies = [
     "tensorflow",
     "tensorflow-probability",
     "pytest",
-    "tf-keras",
     "polars",
 ]
 
