@@ -127,6 +127,41 @@ def gaussian_kernel(x1, x2, B_chol):
     return result
 
 
+def gaussian_kernel2(diffs, B_chol):
+    """
+    Inputs
+    ------
+    x1: tensor of shape `(batch_shape) + (n1, p)`
+    x2: tensor of shape `(batch_shape) + (n2, p)`
+    B_chol: cholesky factor of the Gaussian kernel bandwidth, of shape
+        `(p, p)`
+    
+    Returns
+    -------
+    tensor of shape `(batch_shape) + (n1, n2)`
+    
+    """
+    diffs_shape = diffs.shape.as_list()
+    B_chol_shape = B_chol.shape.as_list()
+    if diffs_shape[-1] != B_chol_shape[-1]:
+        raise ValueError("diffs, and B_chol must correspond to the same number of features")
+    
+    if B_chol_shape != [B_chol_shape[-1], B_chol_shape[-1]]:
+        raise ValueError("B_chol must be a square matrix")
+    
+    # product (x1 - x2)^T * B_chol
+    diff_chol_prod = tf.expand_dims(tf.matmul(diffs, B_chol), -1)
+    
+    # kernel value, exp[-1 * (x1 - x2)^T * B_chol * B_chol^T * (x1 - x2)]
+    result = tf.exp(-1.0 * tf.matmul(diff_chol_prod, diff_chol_prod, transpose_a=True))
+    
+    # drop extra 1x1 dimensions from matrix product calculation
+    result = tf.squeeze(result, [-1, -2])
+    
+    return result
+
+
+
 def kernel_weights(x1, x2, theta_b, kernel = 'gaussian_diag'):
     """
     Calculate weights for observations in `x2` based on their similarity to
@@ -170,7 +205,7 @@ def kernel_weights(x1, x2, theta_b, kernel = 'gaussian_diag'):
     return weights
 
 
-def kernel_weights2(block_list):
+def kernel_weights2(all_diffs, theta_b, kernel = 'gaussian_diag'):
     
     features_list = [d['features'] for d in block_list]
     weights = []
