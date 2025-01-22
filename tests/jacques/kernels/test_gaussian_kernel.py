@@ -74,3 +74,6 @@ def test_gaussian_full_weights():
 
         # within batches and x2 observations, weights sum to 1 across x1 observations
         assert(np.all(np.abs(tf.reduce_sum(actual_weights, axis=-1).numpy() - np.ones((2, 3, 10))) < 1e-12))
+
+def test_gaussian_kernel_diffs():
+    pass
