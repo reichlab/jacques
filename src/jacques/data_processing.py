@@ -163,7 +163,7 @@ def calc_diffs_all_train_blocks(block_list, distance_metric):
     Returns
     _______
     all_diffs: list of lists of tensors
-        A list of lists of tensors containing the differences between the test blocks and a training block
+        A list of lists of tensors containing the differences between the training blocks and a testing block
     
     """
     num_blocks = len(block_list)

@@ -127,7 +127,7 @@ def gaussian_kernel(x1, x2, B_chol):
     return result
 
 
-def gaussian_kernel2(diffs, B_chol):
+def gaussian_kernel_diffs(diffs_one_test_block, B_chol):
     """
     Inputs
     ------
@@ -141,7 +141,7 @@ def gaussian_kernel2(diffs, B_chol):
     tensor of shape `(batch_shape) + (n1, n2)`
     
     """
-    diffs_shape = diffs.shape.as_list()
+    diffs_shape = diffs_one_test_block.shape.as_list()
     B_chol_shape = B_chol.shape.as_list()
     if diffs_shape[-1] != B_chol_shape[-1]:
         raise ValueError("diffs, and B_chol must correspond to the same number of features")
@@ -150,7 +150,7 @@ def gaussian_kernel2(diffs, B_chol):
         raise ValueError("B_chol must be a square matrix")
     
     # product (x1 - x2)^T * B_chol
-    diff_chol_prod = tf.expand_dims(tf.matmul(diffs, B_chol), -1)
+    diff_chol_prod = tf.expand_dims(tf.matmul(diffs_one_test_block, B_chol), -1)
     
     # kernel value, exp[-1 * (x1 - x2)^T * B_chol * B_chol^T * (x1 - x2)]
     result = tf.exp(-1.0 * tf.matmul(diff_chol_prod, diff_chol_prod, transpose_a=True))
@@ -205,11 +205,46 @@ def kernel_weights(x1, x2, theta_b, kernel = 'gaussian_diag'):
     return weights
 
 
-def kernel_weights2(all_diffs, theta_b, kernel = 'gaussian_diag'):
+def kernel_weights2(diffs, theta_b, kernel = 'gaussian_diag'):
+    """
+    Calculate weights for observations in `x2` based on their similarity to
+    observations in `x1` according to a specified kernel.
     
-    features_list = [d['features'] for d in block_list]
-    weights = []
-
+    Inputs
+    ------
+    x1: tensor of shape `(batch_shape) + (n1, p)`
+    x2: tensor of shape `(batch_shape) + (n2, p)`
+    theta_b: one-dimensional tensor of parameters used to construct a
+        bandwidth matrix
+    kernel: string specifying the kernel form; supported options are
+        'gaussian_diag' and `gaussian_full'
+    
+    Returns
+    -------
+    tensor of shape `(batch_shape) + (n1, n2)` with observation weights.
+    
+    Notes
+    -----
+    Suppose the batch shape is dimension `k`. The return value entries at
+    indices `[b1, ..., bk, i, :]` are non-negative weights that sum to 1
+    and measure the similarity of each feature vector
+    x2[b1, ..., bk, j, :] to the corresponding values x1[b1, ..., bk, i, :]
+    """
+    if kernel == 'gaussian_diag':
+        # TODO: Direct implementation not requiring multiplication by a diagonal
+        # Cholesky factor
+        B_chol = tf.linalg.diag(softplus_bijector.forward(theta_b))
+        kernel_vals = gaussian_kernel_diffs(diffs, B_chol)
+    elif kernel == 'gaussian_full':
+        B_chol = transform_chol(theta_raw=theta_b, d=diffs.shape[-1])
+        kernel_vals = gaussian_kernel_diffs(diffs, B_chol)
+    else:
+        raise ValueError("kernel must be 'gaussian_diag' or 'gaussian_full'")
+    
+    # TODO: may be faster to use tf.linalg.normalize?
+    weights = kernel_vals / \
+        tf.math.reduce_sum(kernel_vals, axis = -1, keepdims=True)
+    
     return weights
 
 

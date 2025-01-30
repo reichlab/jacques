@@ -1,9 +1,33 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
+import pytest
 
 from jacques import kernels
 
+@pytest.fixture
+def sample_block_list():
+    """Fixture to create a sample block list for testing."""
+    
+    feature_tensors = [
+        tf.constant([[1, 2], [3, 4]]),
+        tf.constant([[5, 6]]),
+        tf.constant([[7, 8], [9, 10], [11, 12]]),
+        tf.constant([[3, 4], [5, 6]]),
+        tf.constant([[1, 8], [9, 2], [3, 5], [1,2]]),
+    ]
+
+    target_tensors = [
+        tf.constant([0, 5]),
+        tf.constant([2]),
+        tf.constant([9, 7, 3]),
+        tf.constant([6, 8]),
+        tf.constant([1, 4, 7, 9]),
+    ]
+
+    data_list = [{'features': f, 'target': t} for f, t in zip(feature_tensors, target_tensors)]
+
+    return data_list
 
 def test_diff_x_pairs():
     x1 = np.arange(2*3*10*5).reshape(2, 3, 10, 5)
@@ -75,5 +99,24 @@ def test_gaussian_full_weights():
         # within batches and x2 observations, weights sum to 1 across x1 observations
         assert(np.all(np.abs(tf.reduce_sum(actual_weights, axis=-1).numpy() - np.ones((2, 3, 10))) < 1e-12))
 
-def test_gaussian_kernel_diffs():
+def test_gaussian_kernel_diffs(sample_block_list):
+    diffs = [
+        tf.constant([
+            [[6, 6], [4, 4]],
+            [[8, 8], [6, 6]],
+            [[10, 10], [8, 8]]
+            ], dtype=tf.int32),
+        tf.constant([
+        [[6, 0], [-2, 6], [4, 3], [6, 6]],
+        [[8, 2], [0, 8], [6, 5], [8, 8]],
+        [[10, 4], [2, 10], [8, 7], [10, 10]]
+        ], dtype=tf.int32),
+     ]
+    
+    
+
+    B_sd = tf.linalg.diag(tfp.bijectors.Softplus().forward([1.,2.]))
+    B_corr_chol = tfp.bijectors.CorrelationCholesky().forward([1.])
+    B_chol = B_corr_chol @ B_sd
+
     pass

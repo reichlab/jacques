@@ -6,6 +6,8 @@ import random
 import numpy as np
 import tensorflow as tf
 
+from jacques.data_processing import assign_blocks, calc_diffs_all_train_blocks, train_test_pairings
+
 
 class jacques(abc.ABC):
     def single_batch_generator(self, x_train_val, y_train_val, block_size):
@@ -260,6 +262,45 @@ class jacques(abc.ABC):
         loss = self.pinball_loss(y_test, q_hat, tau)
 
         return loss
+    
+
+    def pinball_loss_objective2(self, param_vec, diffs_one_batch, y_train, y_test, tau):
+        """
+        Pinball loss objective function for use during parameter estimation:
+        a function of component weights
+
+        Parameters
+        ----------
+        param_vec: 1D tensor
+            parameter values in an unconstrained space (i.e., real numbers)
+        x_train: 3D tensor with shape (batch_size, N_train, P)
+            feature values of the training set
+        y_train: 2D tensor with shape (batch_size, N_train)
+            observed response values of the training set
+        x_test: 3D tensor with shape (batch_size, N_test = L, P)
+            feature values for each location at forecast date in test set
+        y_test: 2D tensor with shape (batch_size, N_test = L)
+            observed response values of the test set
+        tau: 1D of length K
+            quantile levels (probabilities)
+
+        Returns
+        -------
+        Scalar pinball loss for predictions of y_test at
+        quantile levels tau based on the training data
+        """
+
+        # q_hat has shape (batch_shape, N_test = L, K)
+        q_hat = self.predict2(
+            param_vec=param_vec,
+            diffs=diffs_one_batch,
+            y_train=y_train,
+            tau=tau,
+        )
+
+        loss = self.pinball_loss(y_test, q_hat, tau)
+
+        return loss
 
     # not using this for now
     def set_param_estimates_vec(self, param_estimates_vec):
@@ -427,6 +468,109 @@ class jacques(abc.ABC):
         self.loss_trace = lls_
 
         return param_vec_var
+
+    def fit2(self,
+        df,
+        time_var,
+        features,
+        target, 
+        num_blocks,
+        tau,
+        optim_method,
+        num_epochs,
+        learning_rate,
+        batch_size=1,
+        init_param_vec=None,
+        verbose=False,
+        save_frequency=None,
+        save_path=None,):
+        """
+        Estimate model parameters
+        """
+
+        # initialize init_param_vec
+        if init_param_vec is None:
+            # all zeros
+            init_param_vec = tf.constant(np.zeros(self.n_param), dtype=np.float32)
+        
+        # declare variable representing parameters to estimate
+        param_vec_var = tf.Variable(initial_value=init_param_vec, name="param_vec", dtype=np.float32)
+
+        # create optimizer
+        if optim_method == "adam":
+            optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
+        elif optim_method == "sgd":
+            optimizer = tf.optimizers.SGD(learning_rate=learning_rate)
+
+        # number of batches
+        num_batches = math.ceil(num_blocks / batch_size)
+
+        # initiate loss trace
+        lls_ = np.zeros(num_epochs * num_batches, np.float32)
+        i = 0
+
+        # create a list of trainable variables
+        trainable_variables = [param_vec_var]
+
+        # Split data into blocks
+        block_list = assign_blocks(df, time_var, features, target, num_blocks)
+
+        # Split block_list into features and targets
+        features_list = [block['features'] for block in block_list]
+        targets_list = [block['target'] for block in block_list]
+
+        # Calculate differences between all training blocks
+        diffs = calc_diffs_all_train_blocks(features_list, "difference")
+
+        # Design matrix of training set and testing 
+        train_test_matrix = train_test_pairings(num_blocks)
+
+        for epoch in range(num_epochs):
+            for batch_ind in range(num_batches):
+
+                y_train = [block for block, keep in zip(features_list, train_test_matrix[batch_ind]) if keep]
+                y_test = targets_list[batch_ind]
+                test_block = features_list[batch_ind]
+                
+                with tf.GradientTape() as tape:
+                    loss = self.pinball_loss_objective2(param_vec_var, diffs[batch_ind], y_train, y_test, tau)
+
+                grads = tape.gradient(loss, trainable_variables)
+                grads, _ = tf.clip_by_global_norm(grads, 10.0)
+                optimizer.apply_gradients(zip(grads, trainable_variables))
+                lls_[i] = loss
+                i += 1
+
+                if verbose:
+                    print("epoch idx = %d" % epoch)
+                    print("batch idx = %d" % batch_ind)
+                    print("loss idx = %d" % (epoch + 1) * (batch_ind + 1))
+                    print("param estimates vec = ")
+                    print(param_vec_var.numpy())
+                    print("loss = ")
+                    print(loss.numpy())
+                    print("grads = ")
+                    print(grads)
+                if save_frequency is not None and save_path is not None:
+
+                    if ((epoch + 1) * (batch_ind + 1)) % save_frequency == 0:
+                        # save parameter estimates and loss trace
+                        params_to_save = {
+                            "param_estimates_vec": param_vec_var.numpy(),
+                            "loss_trace": lls_,
+                        }
+
+                        pickle.dump(params_to_save, open(str(save_path), "wb"))
+
+        # set parameter estimates
+        # self.set_param_estimates_vec(params_vec_var.numpy())
+        self.loss_trace = lls_
+
+        return param_vec_var
+
+
+
+
 
 
 # class some_child_class(jacques):

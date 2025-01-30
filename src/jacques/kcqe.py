@@ -95,3 +95,38 @@ class KCQE(jacques):
                                           w=w_train,
                                           tau=tau,
                                           theta_b_raw=param_dict['y_bw_raw'])
+    
+
+    def predict2(self, param_vec, diffs, y_train, tau):
+        """
+        Generate quantile predictions from a KCQE model
+        
+        Inputs
+        ------
+        param_vec: tensor of shape `(self.n_param,)` with vector of parameters
+        x_train: tensor or list of tensors of shape `(batch_shape) + (n_train, p)` with training
+            set features. If it is a list, each item is from a different data source.
+        y_train: tensor of shape `(batch_shape) + (n_train,)` with training
+            set response values
+        x_test: tensor of shape `(batch_shape) + (n_test, p)` with test set
+            features
+        tau: tensor of length `k` with probability levels at which to extract
+            quantile estimates
+        
+        Returns
+        -------
+        tensor of shape `(batch_shape) + (n_test, k)` with test set quantile
+            estimates at each quantile level
+        
+        Raises
+        ------
+        ValueError if the last dimension of `x_train` and `x_test` don't match
+        `self.p`
+        """
+        
+        param_dict = self.unpack_param_vec(param_vec)
+        
+        # w_train is a tensor of shape `(batch_shape) + (n_test, n_train)`
+        w_train = kernels.kernel_weights2(diffs, theta_b=param_dict['x_bw_raw'], kernel=self.x_kernel)
+        
+        return kernels.kernel_quantile_fn(y=y_train, w=w_train, tau=tau, theta_b_raw=param_dict['y_bw_raw'])
