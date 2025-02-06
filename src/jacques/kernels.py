@@ -68,8 +68,7 @@ def transform_chol(theta_raw, d):
     """
     diag_raw = theta_raw[:d]
     corr_chol_raw = theta_raw[d:]
-    scale_bijector = tfp.bijectors.ScaleMatvecDiag(
-        scale_diag=softplus_bijector.forward(diag_raw))
+    scale_bijector = tfp.bijectors.ScaleMatvecDiag(scale_diag=softplus_bijector.forward(diag_raw))
     return scale_bijector.forward(x=corr_chol_bijector.forward(corr_chol_raw))
 
 
