@@ -17,6 +17,9 @@ dependencies = [
     "tensorflow-probability",
     "pytest",
     "polars",
+    "matplotlib>=3.10.0",
+    "tf-keras>=2.18.0",
+    "ipykernel>=6.29.5",
 ]
 
 [project.optional-dependencies]
