@@ -264,44 +264,6 @@ class jacques(abc.ABC):
         return loss
     
 
-    def pinball_loss_objective2(self, param_vec, diffs_one_batch, y_train, y_test, tau):
-        """
-        Pinball loss objective function for use during parameter estimation:
-        a function of component weights
-
-        Parameters
-        ----------
-        param_vec: 1D tensor
-            parameter values in an unconstrained space (i.e., real numbers)
-        x_train: 3D tensor with shape (batch_size, N_train, P)
-            feature values of the training set
-        y_train: 2D tensor with shape (batch_size, N_train)
-            observed response values of the training set
-        x_test: 3D tensor with shape (batch_size, N_test = L, P)
-            feature values for each location at forecast date in test set
-        y_test: 2D tensor with shape (batch_size, N_test = L)
-            observed response values of the test set
-        tau: 1D of length K
-            quantile levels (probabilities)
-
-        Returns
-        -------
-        Scalar pinball loss for predictions of y_test at
-        quantile levels tau based on the training data
-        """
-
-        # q_hat has shape (batch_shape, N_test = L, K)
-        q_hat = self.predict2(
-            param_vec=param_vec,
-            diffs=diffs_one_batch,
-            y_train=y_train,
-            tau=tau,
-        )
-
-        loss = self.pinball_loss(y_test, q_hat, tau)
-
-        return loss
-
     # not using this for now
     def set_param_estimates_vec(self, param_estimates_vec):
         """
@@ -469,7 +431,70 @@ class jacques(abc.ABC):
 
         return param_vec_var
 
-    def fit2(self,
+"""
+Jacques2 is a class which has the following methods:
+1. blocking
+2. batching
+3. predict
+4. loss
+"""
+class jacques2(abc.ABC):
+    def blocking(self, df, time_var, block_size):
+
+        """
+        Split data into blocks
+
+        """
+
+
+    # Calculate batch_size distinct random numbers from 0 to num_blocks
+    # For each 
+
+    # pinball_loss
+
+    # pinball_loss_objective
+
+     def pinball_loss_objective2(self, param_vec, diffs_one_batch, y_train, y_test, tau):
+        """
+        Pinball loss objective function for use during parameter estimation:
+        a function of component weights
+
+        Parameters
+        ----------
+        param_vec: 1D tensor
+            parameter values in an unconstrained space (i.e., real numbers)
+        x_train: 3D tensor with shape (batch_size, N_train, P)
+            feature values of the training set
+        y_train: 2D tensor with shape (batch_size, N_train)
+            observed response values of the training set
+        x_test: 3D tensor with shape (batch_size, N_test = L, P)
+            feature values for each location at forecast date in test set
+        y_test: 2D tensor with shape (batch_size, N_test = L)
+            observed response values of the test set
+        tau: 1D of length K
+            quantile levels (probabilities)
+
+        Returns
+        -------
+        Scalar pinball loss for predictions of y_test at
+        quantile levels tau based on the training data
+        """
+
+        # q_hat has shape (batch_shape, N_test = L, K)
+        q_hat = self.predict2(
+            param_vec=param_vec,
+            diffs=diffs_one_batch,
+            y_train=y_train,
+            tau=tau,
+        )
+
+        loss = self.pinball_loss(y_test, q_hat, tau)
+
+        return loss
+
+
+
+    def fit(self,
         df,
         time_var,
         features,

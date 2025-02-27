@@ -17,6 +17,8 @@ dependencies = [
     "tensorflow-probability",
     "pytest",
     "polars",
+    "torch>=2.6.0",
+    "tf-keras>=2.18.0",
 ]
 
 [project.optional-dependencies]

@@ -2,7 +2,8 @@ import random
 
 import numpy as np
 import polars as pl
-import tensorflow as tf
+import pandas as pd
+import torch
 
 from jacques.kernels import diff_x_pairs
 
@@ -27,13 +28,10 @@ def date_block_map(df, time_var, num_blocks):
         Dictionary with time points as keys and block assignments as values
     """
     if df.empty:
-        raise ValueError("Input dataframe is empty.")
+      raise ValueError("Input dataframe is empty.")
 
     unique_times = df[time_var].unique()
     time_points = len(unique_times)
-
-    if num_blocks <= 0:
-        raise ValueError("Number of blocks must be greater than zero.")
 
     block_size = time_points // num_blocks
 
@@ -44,7 +42,7 @@ def date_block_map(df, time_var, num_blocks):
 
     #All of the leftover time points get assigned to the first block
     if leftover > 0:
-        block_assignments = np.concatenate((np.repeat(0, leftover), block_assignments))
+      block_assignments = np.concatenate((np.repeat(0, leftover), block_assignments))
 
     
     #Create a dictionary of time points and their corresponding block assignments
@@ -53,7 +51,7 @@ def date_block_map(df, time_var, num_blocks):
     return block_map
 
 
-def assign_blocks(df, time_var, features, target, num_blocks):
+def assign_blocks(df: pd.DataFrame, time_var: str, features: list[str], target: str, block_size: int) -> list[dict[str, torch.Tensor]]:
     """
     Assigns each time point in the dataset to a block
     
@@ -62,24 +60,44 @@ def assign_blocks(df, time_var, features, target, num_blocks):
     df: pandas dataframe
     time_var: str
         Name of the time variable
-    block_map: dict
-        Dictionary with time points as keys and block assignments as values
+    features: list of str
+        List of feature names
+    target: str
+        Name of the target variable
+    block_size: integer
+        Number of time points in each block
 
     Returns
     _______
     block_list: list of dictionaries
         Each dictionary contains the features and target values for a given block
     """
+    if df.empty:
+        raise ValueError("Input dataframe is empty.")
+
+    unique_times = df[time_var].unique()
+    time_points = len(unique_times)
+
+    num_blocks = time_points // block_size
+
+    if num_blocks == 0:
+        raise ValueError("Block size is too large for the dataset.")
+
 
     block_map = date_block_map(df, time_var, num_blocks)
 
+    df = df.copy()
+
     df['block'] = df[time_var].map(block_map).astype(int)
+
+    df_pl = pl.from_pandas(df)
     
     block_list = []
     for i in range(num_blocks):
+        block_data = df_pl.filter(pl.col("block") == i).select(features + [target])
         data_dict = {
-            'features' : tf.constant(pl.from_pandas(df).filter(pl.col("block") == i).select(features), dtype = tf.float32),
-            'target': tf.constant(pl.from_pandas(df).filter(pl.col("block") == i).select(target), dtype = tf.float32)
+            'features' : block_data.select(features).to_torch( dtype = pl.Float32),
+            'target': block_data.select(target).to_torch(dtype = pl.Float32)
         }
         block_list.append(data_dict)
 

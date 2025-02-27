@@ -1,115 +1,86 @@
 import pandas as pd
 import pytest
+import torch
 
-from jacques.data_processing import assign_blocks, date_block_map
+from jacques.data_processing import assign_blocks
 
 
-@pytest.fixture
-def sample_df():
-    """Fixture to create a sample DataFrame for testing."""
-    return pd.DataFrame({
-        'time': pd.date_range(start='2023-01-01', periods=10, freq='D')
+
+def test_assign_blocks_basic():
+    df = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=6, freq="D"),
+        "feature1": [10, 20, 30, 40, 50, 60],
+        "feature2": [1, 2, 3, 4, 5, 6],
+        "target": [100, 200, 300, 400, 500, 600],
     })
+    
+    features = ["feature1", "feature2"]
+    target = "target"
+    block_size = 2
 
-def test_equal_block_size(sample_df):
-    """Test when num_blocks divides the time points evenly."""
-    block_map = date_block_map(sample_df, 'time', 2)  # 10 time points, 2 blocks
-    assert len(block_map) == 10  # Should have 10 time points
+    block_list = assign_blocks(df, "date", features, target, block_size)
 
-    block_values = list(block_map.values())
-    # Check that the blocks are divided evenly
-    assert block_values.count(0) == 5
-    assert block_values.count(1) == 5
+    # Check number of blocks
+    assert len(block_list) == 3  # 6 time points / block_size 2 = 3 blocks
 
-def test_with_leftovers(sample_df):
-    """Test when there are leftover time points."""
-    block_map = date_block_map(sample_df, 'time', 3)  # 10 time points, 3 blocks
-    assert len(block_map) == 10
+    # Check first block's features and target
+    expected_features = torch.tensor([[10, 1], [20, 2]], dtype=torch.float32)
+    expected_target = torch.tensor([[100], [200]], dtype=torch.float32)
 
-    block_values = list(block_map.values())
-    # With 10 points and 3 blocks, each block should have 3 or 4 points
-    assert block_values.count(0) == 4  # First block takes the leftovers
-    assert block_values.count(1) == 3
-    assert block_values.count(2) == 3
+    assert torch.all(torch.eq(block_list[0]["features"], expected_features))
+    assert torch.all(torch.eq(block_list[0]["target"], expected_target))
 
+def test_assign_blocks_empty_dataframe():
+    df = pd.DataFrame(columns=["date", "feature1", "feature2", "target"])
+    features = ["feature1", "feature2"]
+    target = "target"
 
-def test_single_block(sample_df):
-    """Test with a single block."""
-    block_map = date_block_map(sample_df, 'time', 1)  # All points should go to block 0
-    assert len(block_map) == 10
-
-    block_values = list(block_map.values())
-    assert block_values == [0] * 10
-
-
-def test_no_blocks(sample_df):
-    """Test with num_blocks = 0, which should raise an error."""
-    with pytest.raises(ValueError, match="Number of blocks must be greater than zero."):
-        date_block_map(sample_df, 'time', 0)
-
-
-def test_empty_df():
-    """Test with an empty dataframe."""
-    empty_df = pd.DataFrame({'time': []})
     with pytest.raises(ValueError, match="Input dataframe is empty."):
-        date_block_map(empty_df, 'time', 3)
+        assign_blocks(df, "date", features, target, block_size=2)
 
-
-def test_df_with_duplicate_times():
-    """Test with a dataframe containing duplicate time entries."""
-    df_with_duplicates = pd.DataFrame({
-        'time': pd.to_datetime(['2023-01-01', '2023-01-01', '2023-01-02', '2023-01-03'])
+def test_assign_blocks_invalid_block_size():
+    df = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=5, freq="D"),
+        "feature1": [10, 20, 30, 40, 50],
+        "feature2": [1, 2, 3, 4, 5],
+        "target": [100, 200, 300, 400, 500],
     })
-    block_map = date_block_map(df_with_duplicates, 'time', 2)  # 3 time points, 2 blocks
-    assert len(block_map) == 3
-    block_values = list(block_map.values())
-    assert block_values.count(0) == 2
-    assert block_values.count(1) == 1
+    features = ["feature1", "feature2"]
+    target = "target"
 
+    with pytest.raises(ValueError, match="Block size is too large for the dataset."):
+        assign_blocks(df, "date", features, target, 10)
 
-# def test_assign_blocks():
-#     # Create test data
-#     df = pd.DataFrame({'date': ['2022-01-06', '2022-01-13', '2022-01-20', '2022-01-27', '2022-02-03'],
-#                        'location': [1, 2, 3, 4, 1],
-#                        'x0': [0, 1, 0, 1, 1],
-#                        'x1': [0, 1, 0, 1, 1],
-#                        'target': [10.0, 10.5, 10.0, 10.5, 12]})
+def test_assign_blocks_with_leftover():
+    df = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=7, freq="D"),
+        "feature1": [10, 20, 30, 40, 50, 60, 70],
+        "feature2": [1, 2, 3, 4, 5, 6, 7],
+        "target": [100, 200, 300, 400, 500, 600, 700],
+    })
     
-#     features = ['x0', 'x1']
-#     target = 'target'
-#     num_blocks = 2
-#     time_var = 'date'
+    features = ["feature1", "feature2"]
+    target = "target"
+    block_size = 3
 
-#     # Assign blocks
-#     block_list = assign_blocks(df, time_var, features, target, num_blocks)
+    block_list = assign_blocks(df, "date", features, target, block_size)
 
-#     # Check the output
-#     assert len(block_list) == 2
-#     assert block_list[0]['features'].shape == (3, 2)
-#     assert block_list[0]['target'].shape == (3,1)
-#     assert block_list[1]['features'].shape == (2, 2)
-#     assert block_list[1]['target'].shape == (2,1)
-
-
-def test_assign_blocks():
-    # Create test data
-    df = pd.DataFrame({'date': ['2022-01-06', '2022-01-13', '2022-01-20', '2022-01-27', '2022-02-03'],
-                       'location': [1, 2, 3, 4, 1],
-                       'x0': [0, 1, 0, 1, 1],
-                       'x1': [0, 1, 0, 1, 1],
-                       'target': [10.0, 10.5, 10.0, 10.5, 12]})
-    
-    features = ['x0', 'x1']
-    target = 'target'
-    num_blocks = 2
-    time_var = 'date'
-
-    # Assign blocks
-    block_list = assign_blocks(df, time_var, features, target, num_blocks)
-
-    # Check the output
+    # Expecting 3 blocks: First with 3 values, Second with 3, Third with 1
     assert len(block_list) == 2
-    assert block_list[0]['features'].shape == (3, 2)
-    assert block_list[0]['target'].shape == (3, 1)
-    assert block_list[1]['features'].shape == (2, 2)
-    assert block_list[1]['target'].shape == (2, 1)
+
+    # Check last block has only 1 observation
+    assert block_list[-1]["features"].shape == (3, 2)
+    assert block_list[-1]["target"].shape == (3, 1)
+
+def test_assign_blocks_large_block_size():
+    df = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=5, freq="D"),
+        "feature1": [10, 20, 30, 40, 50],
+        "feature2": [1, 2, 3, 4, 5],
+        "target": [100, 200, 300, 400, 500],
+    })
+    features = ["feature1", "feature2"]
+    target = "target"
+
+    with pytest.raises(ValueError, match="Block size is too large for the dataset."):
+        assign_blocks(df, "date", features, target, 10)
